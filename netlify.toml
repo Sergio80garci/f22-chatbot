@@ -5,10 +5,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Proxy hacia el backend (reemplaza la URL cuando tengas el backend desplegado)
+# Proxy /api/* → backend Cloud Run
 [[redirects]]
   from  = "/api/*"
-  to    = "https://TU-BACKEND-URL.com/api/:splat"
+  to    = "https://f22-backend-6544735158.us-central1.run.app/api/:splat"
   status = 200
   force  = true
 
