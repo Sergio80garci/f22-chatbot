@@ -38,6 +38,9 @@ frontend/.env.local
 .DS_Store
 Thumbs.db
 
+# Directorio clonado accidentalmente
+f22-chatbot/
+
 # Logs
 *.log
 npm-debug.log*
