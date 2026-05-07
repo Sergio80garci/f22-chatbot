@@ -4,10 +4,9 @@ import random
 import chromadb
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
-
 from backend.api.models import DocumentInfo
 from backend.config import settings
+from backend.rag.pipeline import _build_llm
 
 router = APIRouter()
 
@@ -91,12 +90,8 @@ async def get_suggested_questions():
     # Combine chunks for prompt
     context = "\n\n---\n\n".join(selected_chunks)
 
-    # Generate questions using LLM
-    llm = ChatOllama(
-        base_url=settings.ollama_base_url,
-        model=settings.ollama_model,
-        timeout=120,
-    )
+    # Generate questions using LLM (Groq o Ollama según LLM_PROVIDER)
+    llm = _build_llm()
 
     prompt = f"""Basándote en el siguiente contenido de documentos F22, genera 4 preguntas aleatorias y concretas que puedan ser respondidas con la información proporcionada. Las preguntas deben ser específicas sobre el contenido dado, no genéricas.
 
