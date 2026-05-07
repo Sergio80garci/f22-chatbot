@@ -1,0 +1,27 @@
+[build]
+  publish = "frontend/dist"
+  command = "cd frontend && npm install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Proxy hacia el backend (reemplaza la URL cuando tengas el backend desplegado)
+[[redirects]]
+  from  = "/api/*"
+  to    = "https://TU-BACKEND-URL.com/api/:splat"
+  status = 200
+  force  = true
+
+# SPA fallback — necesario para que React Router funcione en rutas directas (/chat, /documentos)
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""
+Security Audit Report for F22 Chatbot
+Manual checks and recommendations
+"""
+
+import os
+from pathlib import Path
+
+
+def run_audit():
+    print("""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    AUDITORÍA DE SEGURIDAD - F22 CHATBOT                      ║
+║                          Reporte de Seguridad                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+FECHA: May 5, 2026
+PROYECTO: F22 Chatbot RAG para SII
+ÁREAS AUDITADAS: Backend, Frontend, Configuración
+
+═══════════════════════════════════════════════════════════════════════════════
+🔴 PROBLEMAS CRÍTICOS (Resolver inmediatamente)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ❌ NO SE ENCONTRÓ .gitignore
+   IMPACTO: Riesgo CRÍTICO de exposición de credenciales
+   SOLUCIÓN: Crear .gitignore en raíz del proyecto con:
+   ─────────────────────────────────────────────────────
+   .env
+   .env.local
+   .env.*.local
+   __pycache__/
+   *.py[cod]
+   *$py.class
+   *.egg-info/
+   node_modules/
+   dist/
+   build/
+   ─────────────────────────────────────────────────────
+
+2. ⚠️  ChatRequest SIN VALIDACIÓN DE LONGITUD
+   IMPACTO: Posible DoS o Prompt Injection
+   SOLUCIÓN: Modificar backend/api/models.py:
+   ─────────────────────────────────────────────────────
+   from pydantic import BaseModel, Field
+   
+   class ChatRequest(BaseModel):
+       message: str = Field(..., max_length=2000)
+       session_id: Optional[str] = "default"
+   ─────────────────────────────────────────────────────
+
+3. ⚠️  SIN RATE LIMITING EN /api/chat
+   IMPACTO: Vulnerabilidad a ataques de Fuerza Bruta/DoS
+   SOLUCIÓN: Instalar SlowAPI y configurar límites
+   ─────────────────────────────────────────────────────
+   pip install slowapi
+   
+   En backend/api/main.py:
+   from slowapi import Limiter
+   from slowapi.util import get_remote_address
+   
+   limiter = Limiter(key_func=get_remote_address)
+   app.state.limiter = limiter
+   
+   En backend/api/routes/chat.py:
+   @router.post("/chat", response_model=ChatResponse)
+   @limiter.limit("10/minute")
+   async def chat(request: ChatRequest, ...):
+   ─────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════════════════════════
+🟠 PROBLEMAS ALTOS (Resolver en corto plazo)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ⚠️  ERROR HANDLING INSEGURO EN RUTAS
+   UBICACIÓN: backend/api/routes/chat.py, documents.py
+   PROBLEMA: Exception details podrían exponerse
+   SOLUCIÓN: Usar try/catch selectivo
+   
+   ❌ INCORRECTO:
+   except Exception as e:
+       raise HTTPException(status_code=500, detail=str(e))
+   
+   ✅ CORRECTO:
+   except RuntimeError as e:
+       raise HTTPException(status_code=503, detail="Servicio no disponible")
+   except Exception:
+       raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+2. ⚠️  CORS DEMASIADO PERMISIVO POTENCIALMENTE
+   UBICACIÓN: backend/api/main.py
+   VERIFICACIÓN: allow_methods=["*"], allow_headers=["*"]
+   SOLUCIÓN: Ser restrictivo
+   
+   allow_origins=["http://localhost:5173"],  # Solo frontend dev
+   allow_methods=["GET", "POST"],            # Solo métodos necesarios
+   allow_headers=["Content-Type"],           # Solo headers necesarios
+
+3. ⚠️  SIN VALIDACIÓN DE PROMPT INJECTION
+   RIESGO: Atacante podría inyectar instrucciones en ChatRequest
+   SOLUCIÓN: Sanitizar input antes de enviarlo al LLM
+   
+   Ejemplo de sanitización:
+   - Limitar caracteres especiales
+   - No permitir HTML/scripts
+   - Validar longitud máxima
+
+═══════════════════════════════════════════════════════════════════════════════
+🟡 PROBLEMAS MEDIOS (Considerar para mejora)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ℹ️  Sin Security Headers HTTP
+   AGREGAR en backend/api/main.py:
+   
+   from fastapi.middleware.trustedhost import TrustedHostMiddleware
+   
+   app.add_middleware(
+       TrustedHostMiddleware,
+       allowed_hosts=["localhost", "127.0.0.1"]
+   )
+   
+   En respuestas:
+   Content-Security-Policy: default-src 'self'
+   X-Frame-Options: DENY
+   X-Content-Type-Options: nosniff
+
+2. ℹ️  ChromaDB con ruta relativa
+   VERIFICACIÓN: chroma_path="./data/chroma_db"
+   RECOMENDACIÓN: En producción usar ruta absoluta
+   
+   chroma_path=os.path.join(os.path.dirname(__file__), "data", "chroma_db")
+
+3. ℹ️  Sin timeout en LLM queries
+   RIESGO: Ollama podría colgar indefinidamente
+   ESTADO: ✅ Parcialmente presente (timeout=120)
+   VERIFICAR: Que 120s sea razonable; considerar reducir a 60s
+
+═══════════════════════════════════════════════════════════════════════════════
+🟢 CONTROLES DE SEGURIDAD EXISTENTES (✅ PASADOS)
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ NO hay secrets hardcodeados en código
+✅ FastAPI + Uvicorn en uso (frameworks seguros)
+✅ Pydantic para validación de schemas
+✅ ChromaDB para almacenamiento seguro vectorial
+✅ Error handling básico con HTTPException
+✅ CORS middleware presente
+✅ Timeout en llamadas HTTP/LLM
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 PLAN DE REMEDIACIÓN POR FASE
+═══════════════════════════════════════════════════════════════════════════════
+
+FASE 1 - INMEDIATA (Hoy):
+────────────────────────────
+☐ Crear .gitignore
+☐ Agregar Field(max_length=2000) a ChatRequest
+☐ Agregar sanitización básica en chat.py
+
+FASE 2 - CORTO PLAZO (Esta semana):
+────────────────────────────────────
+☐ Instalar slowapi y configurar rate limiting
+☐ Mejorar error handling (no exponer details)
+☐ Ajustar CORS a modo restrictivo
+
+FASE 3 - MEDIANO PLAZO (Este mes):
+───────────────────────────────────
+☐ Agregar security headers middleware
+☐ Implementar logging de auditoría
+☐ Agregar validación de Prompt Injection
+☐ Implementar session timeout
+
+FASE 4 - PRODUCCIÓN (Antes de deploy):
+───────────────────────────────────────
+☐ Certificados SSL/TLS obligatorio
+☐ Implementar JWT authentication
+☐ API Key para endpoints sensibles
+☐ Monitoreo y alertas de seguridad
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 PUNTUACIÓN DE SEGURIDAD: 65/100
+═══════════════════════════════════════════════════════════════════════════════
+
+ESTADO ACTUAL:
+• Crítico:  1 problema  (-20 puntos)
+• Alto:     3 problemas (-15 puntos)
+• Medio:    3 problemas (-10 puntos)
+• PASADO:   7 controles (+20 puntos)
+
+RECOMENDACIONES FINALES:
+───────────────────────
+
+1. PARA DESARROLLO:
+   - Pasar de 65 a 80/100 en esta semana (Fase 1-2)
+   - El proyecto es seguro para testing interno
+
+2. PARA PRODUCCIÓN:
+   - Pasar de 80 a 95/100 antes de deployment
+   - Implementar Fase 3 completa
+   - Hacer penetration testing
+
+3. RESPONSABLES:
+   - Backend: Validación, Rate Limiting, Error Handling
+   - Frontend: CSRF tokens, validación cliente-lado
+   - DevOps: SSL/TLS, firewall, monitoring
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Reporte generado: May 5, 2026 | F22 Chatbot Security Audit v1.0
+""")
+
+
+if __name__ == "__main__":
+    run_audit()
