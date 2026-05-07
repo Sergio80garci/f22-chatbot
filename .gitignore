@@ -12,8 +12,8 @@ venv/
 .venv/
 env/
 
-# Datos y base vectorial (no subir a git — pueden ser grandes)
-data/chroma_db/
+# Datos y base vectorial
+# data/chroma_db/  ← incluido en git para deploy Railway sin re-ingestión
 data/f22/processed/
 
 # Variables de entorno

@@ -1,10 +1,9 @@
 """
-Script de inicio para Railway: ingesta documentos si ChromaDB está vacío,
-luego arranca el servidor FastAPI.
+Script de inicio para Railway: verifica ChromaDB y arranca FastAPI.
+Los embeddings ya están pre-generados localmente y subidos al repo.
 """
 import os
 import sys
-import subprocess
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -24,15 +23,11 @@ def chroma_count() -> int:
 
 
 if __name__ == "__main__":
-    if chroma_count() == 0:
-        print("[start] ChromaDB vacío — ejecutando ingestión de documentos F22...")
-        result = subprocess.run([sys.executable, "scripts/ingest_documents.py"])
-        if result.returncode != 0:
-            print("[start] ERROR en ingestión — abortando")
-            sys.exit(1)
-        print(f"[start] Ingestión completada — {chroma_count()} chunks indexados")
+    count = chroma_count()
+    if count > 0:
+        print(f"[start] ChromaDB listo — {count} chunks indexados")
     else:
-        print(f"[start] ChromaDB ya tiene {chroma_count()} chunks — saltando ingestión")
+        print("[start] ADVERTENCIA: ChromaDB vacío. Verifica CHROMA_PATH o sube los embeddings.")
 
     print(f"[start] Iniciando FastAPI en puerto {PORT}...")
     os.execvp("uvicorn", [
