@@ -13,12 +13,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS: lista separada por comas en variable de entorno ALLOWED_ORIGINS
+origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Only frontend dev server
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],  # Only necessary methods
-    allow_headers=["Content-Type"],  # Only necessary headers
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 app.include_router(chat_router, prefix="/api")
@@ -27,14 +30,15 @@ app.include_router(documents_router, prefix="/api")
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health():
-    # Check Ollama
-    try:
-        r = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=3)
-        ollama_status = "ok" if r.ok else f"error {r.status_code}"
-    except Exception as e:
-        ollama_status = f"unavailable: {e}"
+    if settings.llm_provider == "groq":
+        llm_status = "ok (groq)" if settings.groq_api_key else "error: GROQ_API_KEY no configurada"
+    else:
+        try:
+            r = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=3)
+            llm_status = "ok" if r.ok else f"error {r.status_code}"
+        except Exception as e:
+            llm_status = f"unavailable: {e}"
 
-    # Check ChromaDB
     chunks = 0
     try:
         import chromadb
@@ -45,10 +49,10 @@ async def health():
     except Exception as e:
         chroma_status = f"error: {e}"
 
-    overall = "ok" if ollama_status == "ok" and chroma_status == "ok" else "degraded"
+    overall = "ok" if "ok" in llm_status and chroma_status == "ok" else "degraded"
     return HealthResponse(
         status=overall,
-        ollama=ollama_status,
+        ollama=llm_status,
         chromadb=chroma_status,
         chunks_indexed=chunks,
     )

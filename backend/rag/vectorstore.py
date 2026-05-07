@@ -2,16 +2,20 @@ from functools import lru_cache
 
 import chromadb
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
 
 from backend.config import settings
 
 
-def _make_embeddings() -> OllamaEmbeddings:
-    return OllamaEmbeddings(
-        base_url=settings.ollama_base_url,
-        model=settings.ollama_embed_model,
-    )
+def _make_embeddings():
+    if settings.llm_provider == "groq":
+        from langchain_huggingface import HuggingFaceEmbeddings
+        return HuggingFaceEmbeddings(model_name=settings.hf_embed_model)
+    else:
+        from langchain_ollama import OllamaEmbeddings
+        return OllamaEmbeddings(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_embed_model,
+        )
 
 
 @lru_cache(maxsize=1)

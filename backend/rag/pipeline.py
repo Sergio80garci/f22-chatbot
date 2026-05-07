@@ -1,6 +1,5 @@
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_ollama import ChatOllama
 
 from backend.config import settings
 from backend.rag.retriever import retrieve
@@ -23,12 +22,21 @@ _prompt = ChatPromptTemplate.from_messages(
 )
 
 
-def _build_llm() -> ChatOllama:
-    return ChatOllama(
-        base_url=settings.ollama_base_url,
-        model=settings.ollama_model,
-        timeout=120,
-    )
+def _build_llm():
+    if settings.llm_provider == "groq":
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            api_key=settings.groq_api_key,
+            model=settings.groq_model,
+            temperature=0,
+        )
+    else:
+        from langchain_ollama import ChatOllama
+        return ChatOllama(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+            timeout=120,
+        )
 
 
 def _format_context(docs) -> str:
@@ -67,7 +75,6 @@ def run_rag(question: str, history: list[dict]) -> dict:
         {"context": context, "history": lc_history, "question": question}
     )
 
-    # Generate related questions
     related_prompt = f"""Basándote en la siguiente respuesta y el contexto proporcionado, genera 2 o 3 preguntas relacionadas que profundicen o complementen la información dada. Las preguntas deben ser respondibles con el contenido de los documentos F22 disponibles.
 
 Respuesta: {response.content}
@@ -78,7 +85,11 @@ Preguntas relacionadas:"""
 
     related_chain = ChatPromptTemplate.from_template(related_prompt) | llm
     related_response = related_chain.invoke({})
-    related_questions = [q.strip() for q in related_response.content.split('\n') if q.strip() and q.strip().endswith('?')][:3]
+    related_questions = [
+        q.strip()
+        for q in related_response.content.split('\n')
+        if q.strip() and q.strip().endswith('?')
+    ][:3]
 
     return {
         "answer": response.content,
