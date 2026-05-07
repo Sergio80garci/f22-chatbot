@@ -8,8 +8,20 @@ from backend.config import settings
 
 def _make_embeddings():
     if settings.llm_provider == "groq":
-        from langchain_huggingface import HuggingFaceEmbeddings
-        return HuggingFaceEmbeddings(model_name=settings.hf_embed_model)
+        # ChromaDB default embedding — mismo modelo usado en ingestión
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        from langchain_chroma import Chroma as _Chroma
+
+        class _DefaultEF:
+            """Adaptador para que LangChain use el DefaultEmbeddingFunction de ChromaDB."""
+            def __init__(self):
+                self._ef = DefaultEmbeddingFunction()
+            def embed_documents(self, texts):
+                return self._ef(texts)
+            def embed_query(self, text):
+                return self._ef([text])[0]
+
+        return _DefaultEF()
     else:
         from langchain_ollama import OllamaEmbeddings
         return OllamaEmbeddings(

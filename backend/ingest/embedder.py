@@ -14,10 +14,9 @@ def embed_and_store(documents: list[Document], env: dict) -> int:
     client = chromadb.PersistentClient(path=chroma_path)
 
     if provider == "groq":
-        # HuggingFace embeddings — corre en CPU, sin Ollama requerido
-        from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-        hf_model = env.get("HF_EMBED_MODEL", os.getenv("HF_EMBED_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"))
-        ef = SentenceTransformerEmbeddingFunction(model_name=hf_model)
+        # ChromaDB default embedding (all-MiniLM-L6-v2 via ONNX, ~30MB, sin GPU)
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        ef = DefaultEmbeddingFunction()
     else:
         import requests
         base_url   = env.get("OLLAMA_BASE_URL", "http://localhost:11434")
