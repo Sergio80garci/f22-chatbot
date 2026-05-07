@@ -1,10 +1,9 @@
 import os
-import time
-
 import chromadb
 from langchain_core.documents import Document
 
 COLLECTION_NAME = "f22_knowledge_base"
+MULTILINGUAL_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def embed_and_store(documents: list[Document], env: dict) -> int:
@@ -14,12 +13,11 @@ def embed_and_store(documents: list[Document], env: dict) -> int:
     client = chromadb.PersistentClient(path=chroma_path)
 
     if provider == "groq":
-        # ChromaDB default embedding (all-MiniLM-L6-v2 via ONNX, ~30MB, sin GPU)
-        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-        ef = DefaultEmbeddingFunction()
+        from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+        ef = SentenceTransformerEmbeddingFunction(model_name=MULTILINGUAL_MODEL)
     else:
         import requests
-        base_url   = env.get("OLLAMA_BASE_URL", "http://localhost:11434")
+        base_url    = env.get("OLLAMA_BASE_URL", "http://localhost:11434")
         embed_model = env.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
         try:
             r = requests.get(f"{base_url}/api/tags", timeout=5)
@@ -39,6 +37,7 @@ def embed_and_store(documents: list[Document], env: dict) -> int:
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
         embedding_function=ef,
+        metadata={"hnsw:space": "cosine"},
     )
 
     total = len(documents)
@@ -51,7 +50,7 @@ def embed_and_store(documents: list[Document], env: dict) -> int:
         metadatas.append({k: str(v) for k, v in doc.metadata.items()})
         print(f"  Procesando chunk {i + 1} de {total}...", end="\r")
 
-    batch_size = 100
+    batch_size = 50
     for start in range(0, total, batch_size):
         collection.upsert(
             ids=ids[start:start + batch_size],

@@ -5,23 +5,22 @@ from langchain_chroma import Chroma
 
 from backend.config import settings
 
+MULTILINGUAL_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+
 
 def _make_embeddings():
     if settings.llm_provider == "groq":
-        # ChromaDB default embedding — mismo modelo usado en ingestión
-        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-        from langchain_chroma import Chroma as _Chroma
+        from sentence_transformers import SentenceTransformer
 
-        class _DefaultEF:
-            """Adaptador para que LangChain use el DefaultEmbeddingFunction de ChromaDB."""
-            def __init__(self):
-                self._ef = DefaultEmbeddingFunction()
+        model = SentenceTransformer(MULTILINGUAL_MODEL)
+
+        class _STEmbeddings:
             def embed_documents(self, texts):
-                return self._ef(texts)
+                return model.encode(texts, show_progress_bar=False).tolist()
             def embed_query(self, text):
-                return self._ef([text])[0]
+                return model.encode([text], show_progress_bar=False)[0].tolist()
 
-        return _DefaultEF()
+        return _STEmbeddings()
     else:
         from langchain_ollama import OllamaEmbeddings
         return OllamaEmbeddings(
