@@ -19,12 +19,14 @@ from backend.ingest.embedder import embed_and_store
 from backend.ingest.extract import SUPPORTED_EXTENSIONS, extract_file
 
 ENV = {
-    "OLLAMA_BASE_URL": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-    "OLLAMA_MODEL": os.getenv("OLLAMA_MODEL", "llama3.2"),
+    "LLM_PROVIDER":     os.getenv("LLM_PROVIDER", "ollama"),
+    "OLLAMA_BASE_URL":  os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+    "OLLAMA_MODEL":     os.getenv("OLLAMA_MODEL", "llama3.2"),
     "OLLAMA_EMBED_MODEL": os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
-    "CHROMA_PATH": os.getenv("CHROMA_PATH", "./data/chroma_db"),
-    "DOCS_PATH": os.getenv("DOCS_PATH", "./data/f22/raw"),
-    "PROCESSED_PATH": os.getenv("PROCESSED_PATH", "./data/f22/processed"),
+    "HF_EMBED_MODEL":   os.getenv("HF_EMBED_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"),
+    "CHROMA_PATH":      os.getenv("CHROMA_PATH", "./data/chroma_db"),
+    "DOCS_PATH":        os.getenv("DOCS_PATH", "./data/f22/raw"),
+    "PROCESSED_PATH":   os.getenv("PROCESSED_PATH", "./data/f22/processed"),
 }
 
 
