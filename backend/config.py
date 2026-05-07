@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Groq settings (cloud deploy — clave gratis en console.groq.com)
     groq_api_key: str = ""
-    groq_model: str = "llama3-8b-8192"
+    groq_model: str = "llama3-70b-8192"
 
     # HuggingFace embeddings (usado cuando llm_provider=groq, corre en CPU Railway)
     hf_embed_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
