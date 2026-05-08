@@ -14,9 +14,11 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
 
-    # Gemini settings (Google AI Studio — aistudio.google.com)
+    # Gemini / Vertex AI settings
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+    gcp_project: str = "f22-chatbot-sii"
+    gcp_location: str = "us-central1"
 
     # HuggingFace embeddings (usado cuando llm_provider=groq, corre en CPU Railway)
     hf_embed_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
