@@ -30,7 +30,9 @@ app.include_router(documents_router, prefix="/api")
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health():
-    if settings.llm_provider == "groq":
+    if settings.llm_provider == "gemini":
+        llm_status = "ok (gemini)" if settings.gemini_api_key else "error: GEMINI_API_KEY no configurada"
+    elif settings.llm_provider == "groq":
         llm_status = "ok (groq)" if settings.groq_api_key else "error: GROQ_API_KEY no configurada"
     else:
         try:

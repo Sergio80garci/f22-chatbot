@@ -20,11 +20,7 @@ def _generate_summary(filename: str, chunks: list[str]) -> None:
 
     content = "\n\n".join(chunks[:2])
     try:
-        llm = ChatOllama(
-            base_url=settings.ollama_base_url,
-            model=settings.ollama_model,
-            timeout=120,
-        )
+        llm = _build_llm()
         prompt = f"Resume en 2 líneas máximo el siguiente contenido del documento F22:\n\n{content}"
         chain = ChatPromptTemplate.from_template(prompt) | llm
         response = chain.invoke({})
