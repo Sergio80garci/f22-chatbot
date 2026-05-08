@@ -9,7 +9,7 @@ MULTILINGUAL_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def _make_embeddings():
-    if settings.llm_provider == "groq":
+    if settings.llm_provider in ("groq", "gemini"):
         from sentence_transformers import SentenceTransformer
 
         model = SentenceTransformer(MULTILINGUAL_MODEL)
