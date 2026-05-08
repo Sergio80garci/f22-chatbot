@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # LLM provider: "ollama" (local) or "groq" (cloud Railway)
+    # LLM provider: "ollama" (local), "groq" (cloud), "gemini" (Google)
     llm_provider: str = "ollama"
 
     # Ollama settings (local dev)
@@ -10,9 +10,13 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2"
     ollama_embed_model: str = "nomic-embed-text"
 
-    # Groq settings (cloud deploy — clave gratis en console.groq.com)
+    # Groq settings
     groq_api_key: str = ""
-    groq_model: str = "mixtral-8x7b-32768"
+    groq_model: str = "llama-3.1-8b-instant"
+
+    # Gemini settings (Google AI Studio — aistudio.google.com)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
 
     # HuggingFace embeddings (usado cuando llm_provider=groq, corre en CPU Railway)
     hf_embed_model: str = "paraphrase-multilingual-MiniLM-L12-v2"

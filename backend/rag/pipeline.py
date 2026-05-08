@@ -23,7 +23,14 @@ _prompt = ChatPromptTemplate.from_messages(
 
 
 def _build_llm():
-    if settings.llm_provider == "groq":
+    if settings.llm_provider == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            google_api_key=settings.gemini_api_key,
+            model=settings.gemini_model,
+            temperature=0,
+        )
+    elif settings.llm_provider == "groq":
         from langchain_groq import ChatGroq
         return ChatGroq(
             api_key=settings.groq_api_key,
