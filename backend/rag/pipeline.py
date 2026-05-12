@@ -15,17 +15,28 @@ from backend.rag.retriever import retrieve
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Eres un asistente especialista en el Formulario 22 (F22) de \
-Declaración de Renta del SII de Chile.
+Declaración de Renta del SII de Chile. Tu único propósito es responder consultas tributarias \
+basadas en los documentos oficiales del F22 que se te entregan como contexto.
 
-REGLAS:
-1. Responde ÚNICAMENTE con información del contexto proporcionado.
-2. Si la información no está disponible, di: "No tengo esa información en los documentos F22 disponibles."
-3. Cita siempre la fuente: nombre del archivo y sección o línea del formulario.
+REGLAS ESTRICTAS:
+1. Responde EXCLUSIVAMENTE con información del contexto proporcionado más abajo. \
+NUNCA uses conocimiento general, ni respondas sobre geografía, historia, deportes, \
+política, viajes, salud, ni ningún tema fuera del Formulario 22.
+2. Si la pregunta NO es sobre el Formulario 22, impuestos a la renta en Chile, o no \
+hay información relevante en el contexto, responde EXACTAMENTE: \
+"Lo siento, solo puedo responder consultas relacionadas con el Formulario 22 de \
+Declaración de Renta del SII de Chile, basándome en los documentos disponibles."
+3. Cita la fuente cuando uses contexto: nombre del archivo y sección o línea del formulario.
 4. Responde en español formal, claro y preciso.
 5. Menciona códigos de línea explícitamente cuando corresponda (ej: código 159, línea 10).
 
 Contexto de los documentos F22:
 {context}"""
+
+OUT_OF_SCOPE_MESSAGE = (
+    "Lo siento, solo puedo responder consultas relacionadas con el Formulario 22 "
+    "de Declaración de Renta del SII de Chile, basándome en los documentos disponibles."
+)
 
 _MAIN_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -93,6 +104,22 @@ def _extract_sources(docs) -> list[str]:
     return sources
 
 
+def _filter_cited_sources(answer: str, sources: list[str]) -> list[str]:
+    """Filtra la lista de fuentes para quedarse solo con las realmente citadas
+    en el texto de la respuesta. Compara por nombre de archivo y por su 'stem'
+    (sin extensión) para tolerar variaciones tipo 'l2_instruccion' vs 'l2_instruccion.pdf'."""
+    if not answer or not sources:
+        return sources
+    answer_low = answer.lower()
+    cited = []
+    for src in sources:
+        name = src.lower()
+        stem = name.rsplit(".", 1)[0]
+        if name in answer_low or stem in answer_low:
+            cited.append(src)
+    return cited if cited else sources
+
+
 _QUESTION_RE = re.compile(r"¿[^¿?]+\?")
 _REFUSAL_HINTS = ("lo siento", "no puedo", "actividades ilegales", "evasivas")
 
@@ -120,6 +147,15 @@ def _parse_related(raw: str) -> list[str]:
 async def stream_rag(question: str, history: list[dict]) -> AsyncIterator[dict]:
     """Genera la respuesta en streaming y retorna eventos SSE."""
     docs = retrieve(question)
+
+    # Sin chunks relevantes → pregunta fuera del dominio F22
+    if not docs:
+        yield {"type": "sources", "sources": []}
+        for word in OUT_OF_SCOPE_MESSAGE.split(" "):
+            yield {"type": "token", "content": word + " "}
+        yield {"type": "done", "related_questions": []}
+        return
+
     context = _format_context(docs)
     sources = _extract_sources(docs)
 
@@ -127,8 +163,6 @@ async def stream_rag(question: str, history: list[dict]) -> AsyncIterator[dict]:
     for turn in history[-5:]:
         lc_history.append(HumanMessage(content=turn["human"]))
         lc_history.append(AIMessage(content=turn["ai"]))
-
-    yield {"type": "sources", "sources": sources}
 
     llm = _get_llm()
     chain = _MAIN_PROMPT | llm
@@ -141,6 +175,9 @@ async def stream_rag(question: str, history: list[dict]) -> AsyncIterator[dict]:
         if token:
             full_answer += token
             yield {"type": "token", "content": token}
+
+    cited_sources = _filter_cited_sources(full_answer, sources)
+    yield {"type": "sources", "sources": cited_sources}
 
     try:
         await asyncio.sleep(1)
@@ -160,6 +197,14 @@ async def stream_rag(question: str, history: list[dict]) -> AsyncIterator[dict]:
 def run_rag(question: str, history: list[dict]) -> dict:
     """Versión síncrona para compatibilidad (no streaming)."""
     docs = retrieve(question)
+
+    if not docs:
+        return {
+            "answer": OUT_OF_SCOPE_MESSAGE,
+            "sources": [],
+            "related_questions": [],
+        }
+
     context = _format_context(docs)
     sources = _extract_sources(docs)
 

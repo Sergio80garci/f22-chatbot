@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     processed_path: str = "./data/f22/processed"
     top_k_results: int = 3
     llm_max_tokens: int = 1024
+    # Umbral de relevancia (cosine similarity 0-1). Si el mejor chunk está bajo este valor,
+    # se considera que la pregunta no tiene contexto en los documentos F22.
+    min_relevance_score: float = 0.68
 
     # CORS — lista separada por comas
     allowed_origins: str = "http://localhost:5173"
