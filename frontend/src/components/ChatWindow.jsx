@@ -85,6 +85,17 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
     }
   }
 
+  async function fetchFallbackQuestions() {
+    try {
+      const res = await fetch(`${API_BASE}/api/suggested-questions?t=${Date.now()}`)
+      if (!res.ok) return []
+      const data = await res.json()
+      return Array.isArray(data) ? data.slice(0, 3) : []
+    } catch {
+      return []
+    }
+  }
+
   function handleStreamEvent(event) {
     setMessages(prev => {
       const msgs = [...prev]
@@ -95,10 +106,25 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
       } else if (event.type === 'sources') {
         msgs[msgs.length - 1] = { ...last, sources: event.sources }
       } else if (event.type === 'done') {
+        const related = event.related_questions || []
         msgs[msgs.length - 1] = {
           ...last,
           streaming: false,
-          related_questions: event.related_questions || [],
+          related_questions: related,
+        }
+        if (related.length === 0) {
+          const idx = msgs.length - 1
+          fetchFallbackQuestions().then(fallback => {
+            if (fallback.length > 0) {
+              setMessages(curr => {
+                const copy = [...curr]
+                if (copy[idx]) {
+                  copy[idx] = { ...copy[idx], related_questions: fallback }
+                }
+                return copy
+              })
+            }
+          })
         }
       } else if (event.type === 'error') {
         msgs[msgs.length - 1] = {
