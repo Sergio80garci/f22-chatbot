@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     # LLM provider: "groq" (cloud, rápido pero con TPD) o "ollama" (local, lento pero ilimitado)
     llm_provider: str = "groq"
 
+    # Embedding provider: "hf" (sentence-transformers in-process) o "ollama" (requiere Ollama corriendo)
+    embedding_provider: str = "hf"
+    hf_embed_model: str = "nomic-ai/nomic-embed-text-v1.5"
+
     # Groq (LLM cloud)
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"

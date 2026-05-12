@@ -1,41 +1,45 @@
-import os
 import chromadb
 from langchain_core.documents import Document
 
-COLLECTION_NAME = "f22_knowledge_base"
+from backend.config import settings
+from backend.rag.embeddings import get_embeddings
+
+COLLECTION_NAME = settings.chroma_collection
 _BATCH_SIZE = 50
 
 
-class _OllamaEmbeddingFunction:
-    """Wrapper ChromaDB-compatible sobre OllamaEmbeddings."""
+class _LCEmbeddingFunction:
+    """Wrapper ChromaDB-compatible sobre LangChain Embeddings."""
 
-    def __init__(self, model: str, base_url: str):
-        from langchain_ollama import OllamaEmbeddings
-        self._model = OllamaEmbeddings(model=model, base_url=base_url)
+    def __init__(self, embedder):
+        self._embedder = embedder
 
     def name(self) -> str:
-        return "ollama-embedding"
+        return f"lc-{settings.embedding_provider}-embedding"
 
     def __call__(self, input: list[str]) -> list[list[float]]:
-        return self._model.embed_documents(input)
+        return self._embedder.embed_documents(input)
 
 
 def embed_and_store(documents: list[Document], env: dict) -> int:
-    chroma_path = env.get("CHROMA_PATH", "./data/chroma_db")
-    ollama_url = env.get("OLLAMA_BASE_URL", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-    embed_model = env.get("OLLAMA_EMBED_MODEL", os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"))
+    chroma_path = env.get("CHROMA_PATH", settings.chroma_path)
 
-    print(f"  Usando Ollama Embeddings: {embed_model} ({ollama_url})")
+    provider = settings.embedding_provider
+    print(f"  Provider de embeddings: {provider}")
+    if provider == "hf":
+        print(f"  Modelo HF: {settings.hf_embed_model}")
+    else:
+        print(f"  Modelo Ollama: {settings.ollama_embed_model} ({settings.ollama_base_url})")
     print(f"  Batch size: {_BATCH_SIZE}")
 
-    ef = _OllamaEmbeddingFunction(model=embed_model, base_url=ollama_url)
+    ef = _LCEmbeddingFunction(get_embeddings())
 
     client = chromadb.PersistentClient(path=chroma_path)
 
     # Borrar colección existente para re-indexar con el nuevo modelo
     try:
         client.delete_collection(COLLECTION_NAME)
-        print("  Colección anterior eliminada (cambio de modelo de embeddings).")
+        print("  Colección anterior eliminada (re-indexación).")
     except Exception:
         pass
 

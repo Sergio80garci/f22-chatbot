@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv
+.venv
+env
+*.egg-info
+
+# Frontend (no necesario en backend image)
+frontend
+node_modules
+
+# Datos no necesarios en imagen
+data/f22/raw
+data/f22/processed
+data/chroma_db_old
+
+# Scripts dev y secretos
+scripts/auth_gcp.py
+scripts/generate_*.py
+gcp_credentials.json
+client_secret_oauth.json
+.env
+.env.*
+backend.log
+
+# IDE
+.vscode
+.idea
+.claude
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs y dev
+*.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Tests
+tests
+test_*

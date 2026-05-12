@@ -12,16 +12,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 load_dotenv()
 
+from backend.config import settings
 from backend.ingest.chunker import chunk_document
 from backend.ingest.embedder import embed_and_store
 from backend.ingest.extract import SUPPORTED_EXTENSIONS, extract_file
 
 ENV = {
-    "OLLAMA_BASE_URL":   os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-    "OLLAMA_EMBED_MODEL": os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
-    "CHROMA_PATH":       os.getenv("CHROMA_PATH", "./data/chroma_db"),
-    "DOCS_PATH":         os.getenv("DOCS_PATH", "./data/f22/raw"),
-    "PROCESSED_PATH":    os.getenv("PROCESSED_PATH", "./data/f22/processed"),
+    "CHROMA_PATH":    settings.chroma_path,
+    "DOCS_PATH":      settings.docs_path,
+    "PROCESSED_PATH": settings.processed_path,
 }
 
 
@@ -43,9 +42,14 @@ def main():
         print(f"[WARN] No se encontraron documentos soportados en {docs_path}")
         sys.exit(0)
 
+    model_info = (
+        f"HuggingFace: {settings.hf_embed_model}"
+        if settings.embedding_provider == "hf"
+        else f"Ollama: {settings.ollama_embed_model}"
+    )
     print(f"\n{'='*60}")
-    print(f"  F22 Ingestión — {len(files)} archivos encontrados")
-    print(f"  Embedding model: {ENV['OLLAMA_EMBED_MODEL']} (Ollama local)")
+    print(f"  F22 Ingestion — {len(files)} archivos encontrados")
+    print(f"  Embeddings: {model_info}")
     print(f"{'='*60}\n")
 
     start_total = time.time()
