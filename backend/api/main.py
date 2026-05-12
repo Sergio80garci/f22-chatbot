@@ -38,7 +38,10 @@ async def version():
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health():
-    llm_status = f"ok (groq/{settings.groq_model})"
+    if settings.llm_provider.lower() == "ollama":
+        llm_status = f"ok (ollama/{settings.ollama_llm_model})"
+    else:
+        llm_status = f"ok (groq/{settings.groq_model})"
 
     chunks = 0
     try:

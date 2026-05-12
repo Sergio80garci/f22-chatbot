@@ -37,7 +37,12 @@ async def chat_stream(request: ChatRequest):
         except Exception as e:
             import logging
             logging.error(f"Stream error: {e}", exc_info=True)
-            yield f"data: {json.dumps({'type': 'error', 'content': 'Error al procesar la consulta.'})}\n\n"
+            msg = (
+                "Límite de consultas alcanzado. Por favor espera unos minutos e intenta nuevamente."
+                if "rate_limit" in str(e).lower() or "429" in str(e)
+                else "Error al procesar la consulta. Intenta nuevamente."
+            )
+            yield f"data: {json.dumps({'type': 'error', 'content': msg})}\n\n"
             return
 
         # Guardar en historial solo cuando la respuesta está completa
