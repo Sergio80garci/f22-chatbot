@@ -16,7 +16,7 @@ env/
 # data/chroma_db/  ← incluido en git para deploy Railway sin re-ingestión
 data/f22/processed/
 data/summaries_cache.json
-data/questions_pool.json
+# data/questions_pool.json ← incluido en git para deploy Cloud Run (preguntas pre-validadas)
 scripts/auth_gcp.py
 
 # Credenciales GCP (NUNCA subir a git)
