@@ -1,6 +1,6 @@
 """
-Script de inicio para Railway: verifica ChromaDB y arranca FastAPI.
-Los embeddings ya están pre-generados localmente y subidos al repo.
+Script de inicio para Cloud Run.
+El ChromaDB está pre-generado en data/chroma_db/ y se incluye en la imagen Docker.
 """
 import os
 import sys
@@ -9,8 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./data/chroma_db")
-COLLECTION  = os.getenv("CHROMA_COLLECTION", "f22_knowledge_base")
-PORT        = os.getenv("PORT", "8001")
+COLLECTION   = os.getenv("CHROMA_COLLECTION", "f22_knowledge_base")
+PORT         = os.getenv("PORT", "8080")
 
 
 def chroma_count() -> int:
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if count > 0:
         print(f"[start] ChromaDB listo — {count} chunks indexados")
     else:
-        print("[start] ADVERTENCIA: ChromaDB vacío. Verifica CHROMA_PATH o sube los embeddings.")
+        print("[start] ADVERTENCIA: ChromaDB vacío. Verifica que data/chroma_db/ esté en la imagen.")
 
     print(f"[start] Iniciando FastAPI en puerto {PORT}...")
     os.execvp("uvicorn", [

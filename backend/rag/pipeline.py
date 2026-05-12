@@ -1,19 +1,27 @@
+from functools import lru_cache
+from typing import AsyncIterator
+
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_groq import ChatGroq
 
 from backend.config import settings
 from backend.rag.retriever import retrieve
 
-SYSTEM_PROMPT = """Eres un asistente especialista en el Formulario 22 de Declaración \
-de Renta del SII de Chile. Responde ÚNICAMENTE basándote en el contexto proporcionado.
-Si la información no está en el contexto, di explícitamente que no tienes esa información \
-en los documentos disponibles. Siempre cita la fuente (nombre del documento y sección).
-Responde en español formal.
+SYSTEM_PROMPT = """Eres un asistente especialista en el Formulario 22 (F22) de \
+Declaración de Renta del SII de Chile.
+
+REGLAS:
+1. Responde ÚNICAMENTE con información del contexto proporcionado.
+2. Si la información no está disponible, di: "No tengo esa información en los documentos F22 disponibles."
+3. Cita siempre la fuente: nombre del archivo y sección o línea del formulario.
+4. Responde en español formal, claro y preciso.
+5. Menciona códigos de línea explícitamente cuando corresponda (ej: código 159, línea 10).
 
 Contexto de los documentos F22:
 {context}"""
 
-_prompt = ChatPromptTemplate.from_messages(
+_MAIN_PROMPT = ChatPromptTemplate.from_messages(
     [
         ("system", SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="history"),
@@ -21,30 +29,31 @@ _prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
+_RELATED_PROMPT = ChatPromptTemplate.from_template(
+    """Basándote en la respuesta del asistente (70%) y la intención del usuario (30%), \
+genera 3 preguntas de seguimiento sobre el Formulario 22 del SII de Chile. \
+Sin numeración, una por línea, cada una termina con (?).
 
-def _build_llm():
-    if settings.llm_provider == "gemini":
-        from langchain_google_vertexai import ChatVertexAI
-        return ChatVertexAI(
-            model_name=settings.gemini_model,
-            temperature=0,
-            project=settings.gcp_project,
-            location=settings.gcp_location,
-        )
-    elif settings.llm_provider == "groq":
-        from langchain_groq import ChatGroq
-        return ChatGroq(
-            api_key=settings.groq_api_key,
-            model=settings.groq_model,
-            temperature=0,
-        )
-    else:
-        from langchain_ollama import ChatOllama
-        return ChatOllama(
-            base_url=settings.ollama_base_url,
-            model=settings.ollama_model,
-            timeout=120,
-        )
+Usuario: {question}
+Asistente: {answer}
+
+Preguntas:"""
+)
+
+
+@lru_cache(maxsize=1)
+def _get_llm() -> ChatGroq:
+    return ChatGroq(
+        model=settings.groq_model,
+        api_key=settings.groq_api_key,
+        temperature=0,
+        max_tokens=2048,
+    )
+
+
+def _build_llm() -> ChatGroq:
+    """Alias para compatibilidad con documents.py."""
+    return _get_llm()
 
 
 def _format_context(docs) -> str:
@@ -66,7 +75,16 @@ def _extract_sources(docs) -> list[str]:
     return sources
 
 
-def run_rag(question: str, history: list[dict]) -> dict:
+def _parse_related(raw: str) -> list[str]:
+    return [
+        line.strip()
+        for line in raw.strip().split("\n")
+        if line.strip() and "?" in line
+    ][:3]
+
+
+async def stream_rag(question: str, history: list[dict]) -> AsyncIterator[dict]:
+    """Genera la respuesta en streaming y retorna eventos SSE."""
     docs = retrieve(question)
     context = _format_context(docs)
     sources = _extract_sources(docs)
@@ -76,32 +94,62 @@ def run_rag(question: str, history: list[dict]) -> dict:
         lc_history.append(HumanMessage(content=turn["human"]))
         lc_history.append(AIMessage(content=turn["ai"]))
 
-    llm = _build_llm()
-    chain = _prompt | llm
+    yield {"type": "sources", "sources": sources}
 
+    llm = _get_llm()
+    chain = _MAIN_PROMPT | llm
+
+    full_answer = ""
+    async for chunk in chain.astream(
+        {"context": context, "history": lc_history, "question": question}
+    ):
+        token = chunk.content
+        if token:
+            full_answer += token
+            yield {"type": "token", "content": token}
+
+    try:
+        related_chain = _RELATED_PROMPT | llm
+        related_response = await related_chain.ainvoke({
+            "question": question[:200],
+            "answer": full_answer[:800],
+        })
+        related_questions = _parse_related(related_response.content)
+    except Exception:
+        related_questions = []
+
+    yield {"type": "done", "related_questions": related_questions}
+
+
+def run_rag(question: str, history: list[dict]) -> dict:
+    """Versión síncrona para compatibilidad (no streaming)."""
+    docs = retrieve(question)
+    context = _format_context(docs)
+    sources = _extract_sources(docs)
+
+    lc_history = []
+    for turn in history[-5:]:
+        lc_history.append(HumanMessage(content=turn["human"]))
+        lc_history.append(AIMessage(content=turn["ai"]))
+
+    llm = _get_llm()
+    chain = _MAIN_PROMPT | llm
     response = chain.invoke(
         {"context": context, "history": lc_history, "question": question}
     )
 
-    related_prompt = f"""Basándote en la siguiente respuesta y el contexto proporcionado, genera 2 o 3 preguntas relacionadas que profundicen o complementen la información dada. Las preguntas deben ser respondibles con el contenido de los documentos F22 disponibles.
-
-Respuesta: {response.content}
-
-Contexto: {context}
-
-Preguntas relacionadas:"""
-
-    related_chain = ChatPromptTemplate.from_template(related_prompt) | llm
-    related_response = related_chain.invoke({})
-    related_questions = [
-        q.strip()
-        for q in related_response.content.split('\n')
-        if q.strip() and q.strip().endswith('?')
-    ][:3]
+    try:
+        related_chain = _RELATED_PROMPT | llm
+        related_response = related_chain.invoke({
+            "question": question[:200],
+            "answer": response.content[:800],
+        })
+        related_questions = _parse_related(related_response.content)
+    except Exception:
+        related_questions = []
 
     return {
         "answer": response.content,
         "sources": sources,
-        "context_used": [doc.page_content[:120] + "..." for doc in docs],
         "related_questions": related_questions,
     }

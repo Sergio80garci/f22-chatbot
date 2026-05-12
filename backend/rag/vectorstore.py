@@ -2,31 +2,16 @@ from functools import lru_cache
 
 import chromadb
 from langchain_chroma import Chroma
+from langchain_ollama import OllamaEmbeddings
 
 from backend.config import settings
 
-MULTILINGUAL_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
-
-def _make_embeddings():
-    if settings.llm_provider in ("groq", "gemini"):
-        from sentence_transformers import SentenceTransformer
-
-        model = SentenceTransformer(MULTILINGUAL_MODEL)
-
-        class _STEmbeddings:
-            def embed_documents(self, texts):
-                return model.encode(texts, show_progress_bar=False).tolist()
-            def embed_query(self, text):
-                return model.encode([text], show_progress_bar=False)[0].tolist()
-
-        return _STEmbeddings()
-    else:
-        from langchain_ollama import OllamaEmbeddings
-        return OllamaEmbeddings(
-            base_url=settings.ollama_base_url,
-            model=settings.ollama_embed_model,
-        )
+def _make_embeddings() -> OllamaEmbeddings:
+    return OllamaEmbeddings(
+        model=settings.ollama_embed_model,
+        base_url=settings.ollama_base_url,
+    )
 
 
 @lru_cache(maxsize=1)
@@ -41,7 +26,7 @@ def get_vectorstore() -> Chroma:
     if count == 0:
         raise RuntimeError(
             f"La colección '{settings.chroma_collection}' está vacía o no existe. "
-            "Ejecuta /ingest primero para indexar los documentos F22."
+            "Ejecuta 'python scripts/ingest_documents.py' para indexar los documentos F22."
         )
 
     return Chroma(

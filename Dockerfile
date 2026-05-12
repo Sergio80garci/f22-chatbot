@@ -9,12 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-descarga el modelo multilingüe durante el build (queda cacheado en la imagen)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
-
 COPY . .
 
-ENV LLM_PROVIDER=groq
+# data/chroma_db/ viene en el COPY anterior (pre-generado localmente con Gemini embeddings)
+# Para actualizar documentos: re-ingestar localmente y hacer rebuild + redeploy
+
 ENV CHROMA_PATH=/app/data/chroma_db
 ENV DOCS_PATH=/app/data/f22/raw
 ENV PROCESSED_PATH=/app/data/f22/processed

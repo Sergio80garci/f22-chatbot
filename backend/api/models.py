@@ -23,6 +23,6 @@ class DocumentInfo(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    ollama: str
+    llm: str
     chromadb: str
     chunks_indexed: int

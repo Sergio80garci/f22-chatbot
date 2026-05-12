@@ -22,15 +22,8 @@ const styles = {
     letterSpacing: '0.01em',
     display: 'flex',
     alignItems: 'center',
-    gap: 'clamp(0.3rem, 1vw, 0.5rem)',
-  },
-  badge: {
-    background: 'var(--sii-naranja)',
-    color: '#fff',
-    fontSize: 'clamp(0.55rem, 1.5vw, 0.65rem)',
-    fontWeight: 700,
-    padding: '2px 6px',
-    letterSpacing: '0.05em',
+    gap: 'clamp(0.4rem, 1vw, 0.65rem)',
+    textDecoration: 'none',
   },
   links: {
     display: 'flex',
@@ -61,6 +54,7 @@ const styles = {
     transition: 'background 0.15s',
     borderRadius: '2px',
     whiteSpace: 'nowrap',
+    cursor: 'pointer',
   },
   hamburger: {
     background: 'none',
@@ -84,6 +78,7 @@ const styles = {
   },
 }
 
+
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -96,9 +91,11 @@ export default function Navbar() {
   return (
     <>
       <nav style={styles.nav}>
-        <NavLink to="/" style={styles.brand}>
-          <span style={styles.badge}>SII</span>
-          <span style={{ display: 'inline' }}>F22</span>
+        <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '4px 10px', gap: '8px' }}>
+          <img src="/sii-logo.png" alt="SII" style={{ height: '36px', width: 'auto', display: 'block' }} />
+          <span style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.78rem)', color: '#444', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            Formulario 22 — Asistente IA
+          </span>
         </NavLink>
 
         {/* Desktop menu */}
@@ -106,7 +103,6 @@ export default function Navbar() {
           <li><NavLink to="/" style={linkStyle} end>Inicio</NavLink></li>
           <li><NavLink to="/chat" style={linkStyle}>Chatbot</NavLink></li>
           <li><NavLink to="/documentos" style={linkStyle}>Documentos</NavLink></li>
-          <li><NavLink to="/todio" style={linkStyle}>TODIO</NavLink></li>
           <li>
             <button
               style={styles.cta}
@@ -130,57 +126,27 @@ export default function Navbar() {
         </button>
       </nav>
 
-      {/* Mobile menu — visible only when open; hamburger is CSS-hidden on desktop so open can never be true there */}
       {open && (
-        <ul style={{...styles.mobileMenu, display: 'flex', width: '100%' }}>
+        <ul style={{ ...styles.mobileMenu, display: 'flex', width: '100%' }}>
           <li style={{ width: '100%' }}>
-            <NavLink 
-              to="/" 
-              style={linkStyle}
-              onClick={() => setOpen(false)}
-              end
-              className={({ isActive }) => isActive ? 'active' : ''}
-            >
-              <span style={{ display: 'block', padding: '0.6rem 1rem', width: '100%' }}>Inicio</span>
+            <NavLink to="/" style={linkStyle} onClick={() => setOpen(false)} end>
+              <span style={{ display: 'block', padding: '0.6rem 1rem' }}>Inicio</span>
             </NavLink>
           </li>
           <li style={{ width: '100%' }}>
-            <NavLink 
-              to="/chat" 
-              style={linkStyle}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => isActive ? 'active' : ''}
-            >
-              <span style={{ display: 'block', padding: '0.6rem 1rem', width: '100%' }}>Chatbot F22</span>
+            <NavLink to="/chat" style={linkStyle} onClick={() => setOpen(false)}>
+              <span style={{ display: 'block', padding: '0.6rem 1rem' }}>Chatbot F22</span>
             </NavLink>
           </li>
           <li style={{ width: '100%' }}>
-            <NavLink
-              to="/documentos"
-              style={linkStyle}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => isActive ? 'active' : ''}
-            >
-              <span style={{ display: 'block', padding: '0.6rem 1rem', width: '100%' }}>Documentos</span>
-            </NavLink>
-          </li>
-          <li style={{ width: '100%' }}>
-            <NavLink
-              to="/todio"
-              style={linkStyle}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => isActive ? 'active' : ''}
-            >
-              <span style={{ display: 'block', padding: '0.6rem 1rem', width: '100%' }}>TODIO</span>
+            <NavLink to="/documentos" style={linkStyle} onClick={() => setOpen(false)}>
+              <span style={{ display: 'block', padding: '0.6rem 1rem' }}>Documentos</span>
             </NavLink>
           </li>
           <li style={{ width: '100%' }}>
             <button
               style={{ ...styles.cta, width: '100%', marginLeft: 0, borderRadius: 0 }}
-              onClick={() => {
-                navigate('/chat')
-                setOpen(false)
-              }}
+              onClick={() => { navigate('/chat'); setOpen(false) }}
             >
               Consultar ahora
             </button>

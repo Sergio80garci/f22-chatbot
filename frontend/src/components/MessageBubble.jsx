@@ -7,12 +7,11 @@ function getIcon(filename) {
   return FILE_ICON[ext] || '📄'
 }
 
-export default function MessageBubble({ role, content, sources, relatedQuestions = [], onSendMessage }) {
+export default function MessageBubble({ role, content, sources, relatedQuestions = [], streaming = false, onSendMessage }) {
   const isUser = role === 'user'
 
   return (
     <div className={`message-wrapper ${isUser ? 'user' : 'assistant'}`}>
-      {/* Header label */}
       <span style={{
         fontSize: '0.72rem',
         color: 'var(--sii-gris)',
@@ -25,9 +24,14 @@ export default function MessageBubble({ role, content, sources, relatedQuestions
       <div className={`message-bubble ${isUser ? 'user' : 'assistant'}`}>
         {isUser ? (
           <span>{content}</span>
-        ) : (
+        ) : content ? (
           <div className="markdown-body">
             <ReactMarkdown>{content}</ReactMarkdown>
+            {streaming && <span className="streaming-cursor" />}
+          </div>
+        ) : (
+          <div className="streaming-placeholder">
+            <span className="dot" /><span className="dot" /><span className="dot" />
           </div>
         )}
       </div>

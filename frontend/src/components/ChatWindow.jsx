@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
 import MessageBubble from './MessageBubble'
 
 const INITIAL_MESSAGE = {
@@ -7,6 +6,8 @@ const INITIAL_MESSAGE = {
   content: 'Hola, soy el asistente del Formulario 22. ¿En qué puedo ayudarte hoy?',
   sources: [],
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function ChatWindow({ suggestedQuestions = [], loadingQuestions = false }) {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])
@@ -18,31 +19,98 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages])
 
   async function sendMessage(text) {
-    const msg = text || input.trim()
+    const msg = (text || input).trim()
     if (!msg || loading) return
+
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: msg, sources: [] }])
     setLoading(true)
 
+    // Agregar mensaje del usuario y placeholder del asistente
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: msg, sources: [] },
+      { role: 'assistant', content: '', sources: [], streaming: true },
+    ])
+
     try {
-      const res = await axios.post('/api/chat', { message: msg, session_id: sessionId })
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: res.data.answer, sources: res.data.sources || [], related_questions: res.data.related_questions || [] },
-      ])
+      const response = await fetch(`${API_BASE}/api/chat/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, session_id: sessionId }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() // Guardar línea incompleta para el siguiente ciclo
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const event = JSON.parse(line.slice(6))
+            handleStreamEvent(event)
+          } catch {
+            // Ignorar líneas mal formadas
+          }
+        }
+      }
     } catch (err) {
-      const errMsg = err.response?.data?.detail || 'Error de conexión con el servidor.'
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: `⚠️ ${errMsg}`, sources: [] },
-      ])
+      setMessages(prev => {
+        const msgs = [...prev]
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          content: '⚠️ Error de conexión con el servidor. Intenta nuevamente.',
+          sources: [],
+          streaming: false,
+        }
+        return msgs
+      })
     } finally {
       setLoading(false)
       inputRef.current?.focus()
     }
+  }
+
+  function handleStreamEvent(event) {
+    setMessages(prev => {
+      const msgs = [...prev]
+      const last = msgs[msgs.length - 1]
+
+      if (event.type === 'token') {
+        msgs[msgs.length - 1] = { ...last, content: last.content + event.content }
+      } else if (event.type === 'sources') {
+        msgs[msgs.length - 1] = { ...last, sources: event.sources }
+      } else if (event.type === 'done') {
+        msgs[msgs.length - 1] = {
+          ...last,
+          streaming: false,
+          related_questions: event.related_questions || [],
+        }
+      } else if (event.type === 'error') {
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          content: `⚠️ ${event.content}`,
+          sources: [],
+          streaming: false,
+        }
+      }
+
+      return msgs
+    })
   }
 
   function handleKey(e) {
@@ -54,20 +122,19 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
 
   return (
     <div className="chat-container">
-      {/* Messages area */}
       <div className="chat-messages">
         {messages.map((m, i) => (
-          <MessageBubble key={i} role={m.role} content={m.content} sources={m.sources} relatedQuestions={m.related_questions} onSendMessage={sendMessage} />
+          <MessageBubble
+            key={i}
+            role={m.role}
+            content={m.content}
+            sources={m.sources}
+            relatedQuestions={m.related_questions}
+            streaming={m.streaming}
+            onSendMessage={sendMessage}
+          />
         ))}
 
-        {loading && (
-          <div className="loading-indicator">
-            <span className="pulse">⏳</span>
-            Buscando en documentos F22...
-          </div>
-        )}
-
-        {/* Suggested questions (only on empty state) */}
         {messages.length === 1 && loadingQuestions && (
           <div className="suggested-questions">
             <p className="questions-loading-label">
@@ -86,11 +153,7 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
             <p className="suggested-questions-label">Preguntas sugeridas:</p>
             <div className="suggested-questions-list">
               {suggestedQuestions.map(q => (
-                <button
-                  key={q}
-                  onClick={() => sendMessage(q)}
-                  className="suggested-question-btn"
-                >
+                <button key={q} onClick={() => sendMessage(q)} className="suggested-question-btn">
                   {q}
                 </button>
               ))}
@@ -101,7 +164,6 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar */}
       <div className="chat-input-bar">
         <textarea
           ref={inputRef}
@@ -111,16 +173,15 @@ export default function ChatWindow({ suggestedQuestions = [], loadingQuestions =
           placeholder="Escribe tu consulta sobre el F22..."
           rows={1}
           className="chat-textarea"
+          disabled={loading}
         />
         <button
           onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
           className="chat-send-btn"
-          style={{
-            background: input.trim() && !loading ? 'var(--sii-azul)' : '#b0bac8',
-          }}
+          style={{ background: input.trim() && !loading ? 'var(--sii-azul)' : '#b0bac8' }}
         >
-          Enviar
+          {loading ? '...' : 'Enviar'}
         </button>
       </div>
     </div>

@@ -13,10 +13,24 @@ export default function Documentos() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    axios.get('/api/documents')
-      .then(r => setDocs(r.data))
-      .catch(() => setError('No se pudo conectar con el backend.'))
-      .finally(() => setLoading(false))
+    let timer
+
+    const fetchDocs = () => {
+      axios.get('/api/documents')
+        .then(r => {
+          setDocs(r.data)
+          setLoading(false)
+          const pending = r.data.some(d => !d.summary)
+          if (pending) timer = setTimeout(fetchDocs, 4000)
+        })
+        .catch(() => {
+          setError('No se pudo conectar con el backend.')
+          setLoading(false)
+        })
+    }
+
+    fetchDocs()
+    return () => clearTimeout(timer)
   }, [])
 
   const totalChunks = docs.reduce((s, d) => s + d.chunk_count, 0)

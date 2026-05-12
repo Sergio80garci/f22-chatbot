@@ -15,6 +15,13 @@ env/
 # Datos y base vectorial
 # data/chroma_db/  ← incluido en git para deploy Railway sin re-ingestión
 data/f22/processed/
+data/summaries_cache.json
+data/questions_pool.json
+scripts/auth_gcp.py
+
+# Credenciales GCP (NUNCA subir a git)
+gcp_credentials.json
+client_secret_oauth.json
 
 # Variables de entorno
 .env
