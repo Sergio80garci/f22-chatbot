@@ -26,6 +26,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
 COPY backend ./backend
 COPY data/chroma_db ./data/chroma_db
 COPY data/questions_pool.json ./data/questions_pool.json
+COPY data/summaries_cache.json ./data/summaries_cache.json
 
 ENV PORT=8080 \
     LLM_PROVIDER=groq \
