@@ -1,13 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Base path. En GitHub Pages el sitio se sirve bajo /f22-chatbot/.
-// En dev local Vite ignora 'base' para HMR; en build lo usa para prefijar assets.
-// Sobrescribible con VITE_BASE en .env si cambia el nombre del repo.
-const BASE = process.env.VITE_BASE || '/f22-chatbot/'
-
-export default defineConfig({
-  base: BASE,
+// En produccion (GitHub Pages) el sitio se sirve bajo /f22-chatbot/.
+// En dev local usamos / para que las rutas no requieran prefijo.
+// El workflow de GH Actions exporta VITE_BASE=/f22-chatbot/ en build.
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? (process.env.VITE_BASE || '/f22-chatbot/') : '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -19,4 +17,4 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
   },
-})
+}))
