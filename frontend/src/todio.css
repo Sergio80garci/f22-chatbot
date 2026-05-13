@@ -771,6 +771,188 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Flujo de una consulta (Metro Map)
+═══════════════════════════════════════════════════════════ */
+
+.todio-flow-section {
+  width: 100%;
+  max-width: 1180px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 32px clamp(20px, 4vw, 40px);
+  box-shadow: 0 6px 24px rgba(11, 76, 140, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.metro-map-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: linear-gradient(180deg, #F9F8F4 0%, #fff 100%);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.metro-svg {
+  width: 100%;
+  min-width: 1000px;
+  height: auto;
+  display: block;
+}
+
+.flow-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.flow-stat {
+  text-align: center;
+  padding: 16px 10px;
+  background: #F9F8F4;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.fstat-num {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #0B4C8C;
+  line-height: 1;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.fstat-label {
+  font-size: 0.72rem;
+  color: #5F5E5A;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+@media (max-width: 700px) {
+  .flow-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Defensas activas (Security Shield)
+═══════════════════════════════════════════════════════════ */
+
+.todio-defenses-section {
+  width: 100%;
+  max-width: 1180px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 32px clamp(20px, 4vw, 40px);
+  box-shadow: 0 6px 24px rgba(11, 76, 140, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.todio-defenses-section code {
+  background: #F1EFE8;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: #0B4C8C;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.defenses-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.defense-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.defense-col-header {
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.defense-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #F9F8F4;
+  border-radius: 7px;
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.defense-item:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.defense-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.defense-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.defense-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0B4C8C;
+}
+
+.defense-desc {
+  font-size: 0.78rem;
+  color: #5F5E5A;
+  margin-top: 3px;
+  line-height: 1.45;
+}
+
+.defense-example {
+  font-size: 0.72rem;
+  color: #9e9c98;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: #fff;
+  border-radius: 4px;
+  border-left: 2px solid #c8d4e0;
+}
+
+.defense-example em {
+  font-style: italic;
+  color: #6b6a67;
+}
+
+@media (max-width: 900px) {
+  .defenses-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    Skills de Claude Code
 ═══════════════════════════════════════════════════════════ */
 
