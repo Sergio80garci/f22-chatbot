@@ -28,163 +28,180 @@ function gearPath(teeth, innerR, outerR) {
 // ── Más oscuro = más central/importante en la arquitectura ─
 export const COMPONENTES = {
   langchain: {
-    id: 'langchain', nombre: 'LangChain', version: '>=0.2', rol: 'Orquestador RAG',
-    descripcion: 'Orquesta el pipeline RAG completo. Conecta ChromaDB, Ollama y los prompts del F22 para generar respuestas citadas con referencia exacta al documento fuente.',
+    id: 'langchain', nombre: 'LangChain', version: '1.x', rol: 'Orquestador RAG',
+    descripcion: 'Orquesta el pipeline RAG completo. Streaming SSE, prompt templates anti-injection, filtrado por relevancia y construcción del contexto con citas exactas al documento F22 de origen.',
     color: '#1B3F7A',     // Navy profundo — núcleo del sistema
     accentColor: '#1B3F7A',
     detalles: [
-      ['Chain',    'RetrievalQA'],
-      ['Retriever','ChromaDB top-5'],
-      ['LLM',      'Ollama llama3.2'],
-      ['Prompt',   'Template SII personalizado'],
-      ['Idioma',   'Español chileno'],
+      ['Pipeline',   'stream_rag (SSE async)'],
+      ['Retriever',  'ChromaDB top-3 + threshold 0.68'],
+      ['LLM',        'Cerebras llama3.1-8b'],
+      ['Prompt',     'System anti-injection + RAG'],
+      ['Citas',      'Filter por nombre de archivo'],
     ],
-    relacionados: ['ollama', 'chromadb', 'fastapi'],
+    relacionados: ['cerebras', 'chromadb', 'fastapi', 'security'],
     gear: { teeth: 12, outerR: 65, innerR: 50, holeR: 18, speed: 28, cw: true,  cx: 0,    cy: 0   },
   },
   fastapi: {
-    id: 'fastapi', nombre: 'FastAPI', version: 'latest', rol: 'Backend API REST',
-    descripcion: 'Expone el chatbot como servicio HTTP con validación Pydantic, CORS y documentación automática en /docs. Sirve /chat, /documents y /suggested-questions.',
+    id: 'fastapi', nombre: 'FastAPI', version: '0.111+', rol: 'Backend API REST',
+    descripcion: 'Expone el chatbot como servicio HTTP con streaming SSE, validación Pydantic, CORS controlado y manejo robusto de errores. Corre en Cloud Run (us-central1) detrás de HTTPS con auto-scaling 0-2.',
     color: '#1B6B3A',     // Verde bosque — API/backend
     accentColor: '#1B6B3A',
     detalles: [
-      ['Puerto',    '8001'],
-      ['Endpoints', '/chat, /documents, /suggested-questions'],
-      ['Validación','Pydantic v2'],
-      ['Docs',      'localhost:8001/docs'],
-      ['Middleware','CORS + logging'],
+      ['Host prod',  'Cloud Run · us-central1'],
+      ['Puerto',     '8080 (prod) · 8001 (dev)'],
+      ['Endpoints',  '/chat/stream · /documents · /suggested-questions'],
+      ['Stream',     'Server-Sent Events (SSE)'],
+      ['Memoria',    '2 GiB · 2 vCPU · timeout 300s'],
     ],
-    relacionados: ['langchain', 'react'],
+    relacionados: ['langchain', 'react', 'security'],
     gear: { teeth: 9,  outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: false, cx: 115,  cy: 0   },
   },
-  ollama: {
-    id: 'ollama', nombre: 'Ollama + LLM', version: 'latest', rol: 'Motor LLM Local',
-    descripcion: 'Ejecuta llama3.2 y nomic-embed-text completamente en local. Sin costo de API, sin datos enviados a la nube. Privacidad total de los documentos tributarios.',
+  cerebras: {
+    id: 'cerebras', nombre: 'Cerebras Cloud', version: 'llama3.1-8b', rol: 'Motor LLM',
+    descripcion: 'API de inferencia ultra-rápida (~2000 tokens/seg) sobre Llama 3.1 8B. Free tier de ~1M TPM, 14k req/día. Hot-swap con Groq o Ollama vía LLM_PROVIDER env var.',
     color: '#B03A00',     // Naranja tostado — motor IA
     accentColor: '#B03A00',
     detalles: [
-      ['Modelo LLM', 'llama3.2:latest (2.0 GB)'],
-      ['Embeddings', 'nomic-embed-text (274 MB)'],
-      ['Puerto',     '11434'],
-      ['Inferencia', '100% local'],
-      ['Privacidad', 'Datos nunca salen del equipo'],
+      ['Modelo',     'llama3.1-8b (Cerebras free tier)'],
+      ['Velocidad',  '~2000 tokens/seg (LPU)'],
+      ['Free tier',  '~1M TPM · 14k req/día'],
+      ['Fallback',   'Groq llama-3.1-8b-instant'],
+      ['Local',      'Ollama llama3.1:8b para dev'],
     ],
-    relacionados: ['langchain', 'nomic'],
+    relacionados: ['langchain'],
     gear: { teeth: 9,  outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: false, cx: 58,   cy: -100 },
   },
   chromadb: {
-    id: 'chromadb', nombre: 'ChromaDB', version: '>=0.5', rol: 'Base Vectorial',
-    descripcion: 'Almacena embeddings de los documentos F22. Ante cada consulta busca los 5 chunks más similares semánticamente y los entrega como contexto al LLM.',
+    id: 'chromadb', nombre: 'ChromaDB', version: '1.5+', rol: 'Base Vectorial',
+    descripcion: 'Almacena 854 chunks de 76 documentos oficiales del SII (Recuadros, líneas e instrucciones F22). Búsqueda por similitud coseno con umbral de relevancia 0.68 para descartar consultas off-topic.',
     color: '#6B1B6B',     // Púrpura oscuro — base de datos
     accentColor: '#6B1B6B',
     detalles: [
-      ['Versión',   '>=0.5'],
-      ['Ruta',      './data/chroma_db'],
-      ['Búsqueda',  'Similitud coseno'],
-      ['Top-K',     '5 chunks más relevantes'],
-      ['Colección', 'f22_documentos'],
+      ['Chunks',     '854 (76 documentos F22)'],
+      ['Colección',  'f22_knowledge_base'],
+      ['Distancia',  'Cosine similarity'],
+      ['Top-K',      '3 chunks por consulta'],
+      ['Umbral',     '0.68 mínimo (off-topic filter)'],
     ],
-    relacionados: ['langchain', 'nomic'],
+    relacionados: ['langchain', 'hfembed'],
     gear: { teeth: 8,  outerR: 45, innerR: 34, holeR: 12, speed: 23, cw: false, cx: -55,  cy: -95  },
   },
   react: {
-    id: 'react', nombre: 'React + Vite', version: 'v18 + v5.4', rol: 'Frontend SPA',
-    descripcion: 'Aplicación de página única con estilo SII. Chatbot integrado, visor de documentos fuente, página informativa del F22 y esta página de arquitectura.',
+    id: 'react', nombre: 'React + Vite', version: '18 + 5.4', rol: 'Frontend SPA',
+    descripcion: 'SPA con estilo SII desplegado en GitHub Pages bajo /f22-chatbot/. Streaming SSE en tiempo real, fallback de preguntas sugeridas, navbar con título dinámico, footer con versiones.',
     color: '#006699',     // Azul acero — frontend tech
     accentColor: '#006699',
     detalles: [
-      ['React',  'v18'],
-      ['Vite',   'v5.4.21'],
-      ['Puerto', '5173 (dev)'],
-      ['Proxy',  '→ localhost:8001'],
-      ['Rutas',  '/, /chat, /documentos, /todio'],
+      ['Host prod',  'GitHub Pages (sergio80garci.github.io/f22-chatbot)'],
+      ['Build',      'Vite 5.4 · base /f22-chatbot/'],
+      ['Routing',    '/ · /chat · /documentos · /todio'],
+      ['Markdown',   'react-markdown (sin rehype-raw → seguro)'],
+      ['SPA fallback','404.html → index.html (deep-links)'],
     ],
     relacionados: ['fastapi'],
     gear: { teeth: 9,  outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: false, cx: -115, cy: 0   },
   },
-  nomic: {
-    id: 'nomic', nombre: 'nomic-embed', version: 'latest', rol: 'Motor Embeddings',
-    descripcion: 'Convierte texto en vectores de 768 dimensiones vía Ollama. Usado en la ingestión del F22 y en cada consulta para la búsqueda semántica en tiempo real.',
+  hfembed: {
+    id: 'hfembed', nombre: 'HF Embeddings', version: 'nomic v1.5', rol: 'Motor Embeddings',
+    descripcion: 'Sentence-transformers en-proceso con nomic-embed-text-v1.5 (768 dim). Carga al startup (~40s cold start) y queda en memoria. Sin servicio externo → sin red ni rate limit.',
     color: '#007070',     // Teal — ML/embeddings
     accentColor: '#007070',
     detalles: [
-      ['Tamaño',     '274 MB'],
+      ['Modelo',     'nomic-ai/nomic-embed-text-v1.5'],
       ['Dimensiones','768'],
-      ['Vía',        'Ollama API'],
-      ['Uso',        'Ingestión + búsqueda en tiempo real'],
-      ['Cobertura',  'Multilingüe (español incluido)'],
+      ['Prefijos',   'search_query: / search_document:'],
+      ['Tamaño',     '~550 MB en memoria'],
+      ['Ejecución',  'CPU in-process · 0 latencia red'],
     ],
-    relacionados: ['ollama', 'chromadb'],
+    relacionados: ['chromadb'],
     gear: { teeth: 8,  outerR: 45, innerR: 34, holeR: 12, speed: 23, cw: false, cx: -55,  cy: 95   },
   },
-  python: {
-    id: 'python', nombre: 'Python + OCR', version: '3.11.9', rol: 'Runtime + Ingestión',
-    descripcion: 'Runtime del backend y pipeline de ingestión. Tesseract OCR extrae texto de PDFs e imágenes del F22. Soporta PDF, Word (.docx), Excel (.xlsx) y PNG/JPG.',
-    color: '#7A5200',     // Ámbar oscuro — desarrollo/runtime
-    accentColor: '#7A5200',
+  security: {
+    id: 'security', nombre: 'Security Shield', version: '1.0', rol: 'Defensa Multi-Capa',
+    descripcion: 'Módulo backend/rag/security.py que filtra prompt injection, jailbreaks, exfiltración y leak del system prompt. 6 categorías de input + 3 de output. Logging estructurado con hash del mensaje.',
+    color: '#7A1A1A',     // Rojo bordeaux — defensa
+    accentColor: '#7A1A1A',
     detalles: [
-      ['Versión',  '3.11.9'],
-      ['OCR',      'Tesseract 5 + pytesseract'],
-      ['Idioma',   'Español (spa)'],
-      ['Formatos', 'PDF, DOCX, XLSX, PNG, JPG'],
-      ['Librerías','FastAPI, LangChain, ChromaDB'],
+      ['Input filters', '6 (injection · roleplay · exfil · prompt_leak · encoding · syntax)'],
+      ['Output filters','3 (prompt_leak · dangerous_topic · hallucinated_session)'],
+      ['Normalización','Unicode NFKC + zero-width strip'],
+      ['3-strikes',    'Reset de sesión tras 3 ataques'],
+      ['Logging',      'SHA-256 hash · no expone contenido'],
     ],
-    relacionados: ['fastapi', 'langchain'],
+    relacionados: ['langchain', 'fastapi'],
     gear: { teeth: 8,  outerR: 43, innerR: 32, holeR: 12, speed: 23, cw: false, cx: 54,   cy: 94   },
   },
-  netlify: {
-    id: 'netlify', nombre: 'Netlify', version: 'Free Tier', rol: 'Hosting Frontend',
-    descripcion: 'Plataforma de hosting estático que sirve el frontend React en producción. Deploy automático desde GitHub, CDN global con más de 100 edge locations, HTTPS automático con Let\'s Encrypt y dominio personalizable. Reemplaza al localhost:5173 del entorno local — sin servidor que mantener.',
-    color: '#00AD9F',
-    accentColor: '#00AD9F',
+  cloudrun: {
+    id: 'cloudrun', nombre: 'Google Cloud Run', version: 'serverless', rol: 'Hosting Backend',
+    descripcion: 'Contenedor serverless que ejecuta FastAPI + ChromaDB + sentence-transformers. Auto-scaling 0→2 instancias, deploy desde GitHub vía Cloud Build trigger, HTTPS automático, ~$0 con free tier en uso bajo.',
+    color: '#4285F4',
+    accentColor: '#4285F4',
     detalles: [
-      ['Plan',       'Free (100 GB bandwidth/mes)'],
-      ['Deploy',     'Git push → build → live automático'],
-      ['CDN',        'Edge global · 99+ nodos'],
-      ['HTTPS',      'Certificado Let\'s Encrypt automático'],
-      ['Build',      'npm run build · publish: dist/'],
-      ['URL',        'tu-app.netlify.app (o dominio propio)'],
+      ['Región',     'us-central1 (Iowa)'],
+      ['Recursos',   '2 vCPU · 2 GiB RAM · timeout 300s'],
+      ['Scaling',    'min 0 · max 2 instancias'],
+      ['Deploy',     'Push a main → Cloud Build → Artifact Registry'],
+      ['Free tier',  '2M req/mes · 360k GB-s/mes'],
+      ['URL',        'f22-chatbot-backend-6544735158.us-central1.run.app'],
     ],
-    relacionados: ['react', 'railway'],
+    relacionados: ['fastapi', 'chromadb', 'cerebras'],
     gear: { teeth: 9, outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: true, cx: 0, cy: 0 },
   },
-  railway: {
-    id: 'railway', nombre: 'Railway', version: '$5 crédito/mes', rol: 'Hosting Backend',
-    descripcion: 'Plataforma cloud que ejecuta el backend FastAPI con ChromaDB persistente. Detecta Python automáticamente vía requirements.txt, soporta variables de entorno seguras y volúmenes de disco para mantener la base vectorial entre deploys. Reemplaza al localhost:8001 local.',
-    color: '#7C3AED',
-    accentColor: '#7C3AED',
+  ghpages: {
+    id: 'ghpages', nombre: 'GitHub Pages', version: 'Actions deploy', rol: 'Hosting Frontend',
+    descripcion: 'Hosting estático del frontend React. Workflow GitHub Actions construye con Vite y publica bajo /f22-chatbot/. SPA fallback con 404.html, CORS automático con Cloud Run y secret VITE_API_URL para el endpoint.',
+    color: '#181717',
+    accentColor: '#181717',
     detalles: [
-      ['Plan',       '$5 crédito gratis/mes (suficiente para demo)'],
-      ['Runtime',    'Python 3.11 · detectado automático'],
-      ['Start',      'uvicorn backend.api.main:app --host 0.0.0.0'],
-      ['Volumen',    'Persistencia ChromaDB entre deploys'],
-      ['Variables',  'GROQ_API_KEY, CHROMA_PATH, DOCS_PATH'],
-      ['URL',        'tu-app.railway.app'],
+      ['Plan',       'Gratis (repo público)'],
+      ['Workflow',   '.github/workflows/deploy-pages.yml'],
+      ['Build',      'Vite 5 · base /f22-chatbot/'],
+      ['CDN',        'Fastly global'],
+      ['HTTPS',      'Automático · cert managed'],
+      ['URL',        'sergio80garci.github.io/f22-chatbot'],
     ],
-    relacionados: ['fastapi', 'chromadb', 'groq'],
+    relacionados: ['react', 'cloudrun'],
     gear: { teeth: 9, outerR: 50, innerR: 38, holeR: 14, speed: 22, cw: false, cx: 0, cy: 0 },
   },
   groq: {
-    id: 'groq', nombre: 'Groq API', version: 'Free Tier', rol: 'LLM en la Nube',
-    descripcion: 'API gratuita que reemplaza a Ollama en el deploy cloud. Ejecuta Llama 3.2 (el mismo modelo) en hardware especializado LPU de Groq. Sin GPU local requerida, sin costo de inferencia y aproximadamente 10 veces más rápido que Ollama en CPU, con latencia de ~200ms en primera respuesta.',
+    id: 'groq', nombre: 'Groq API', version: 'Fallback', rol: 'LLM Cloud (fallback)',
+    descripcion: 'Provider LLM alternativo. Configurable vía LLM_PROVIDER=groq en Cloud Run. Free tier de 500k TPD con llama-3.1-8b-instant. Se usa si Cerebras está saturado o no disponible.',
     color: '#F97316',
     accentColor: '#F97316',
     detalles: [
-      ['Modelos',    'llama3-8b-8192 · llama3-70b-8192'],
-      ['Plan',       'Gratuito · rate limits generosos'],
-      ['Latencia',   '~200ms primera respuesta (LPU)'],
-      ['Reemplaza',  'Ollama llama3.2 · misma calidad'],
-      ['Cambio',     'OLLAMA_BASE_URL → GROQ_API_KEY en .env'],
-      ['API Key',    'console.groq.com → gratuita'],
+      ['Modelo',     'llama-3.1-8b-instant'],
+      ['Free tier',  '500k tokens/día (TPD)'],
+      ['Velocidad',  '~250 tokens/seg'],
+      ['Uso actual', 'Fallback de Cerebras'],
+      ['Switch',     'LLM_PROVIDER env var'],
     ],
-    relacionados: ['langchain', 'railway'],
+    relacionados: ['langchain', 'cerebras'],
     gear: { teeth: 9, outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: true, cx: 0, cy: 0 },
+  },
+  ollama: {
+    id: 'ollama', nombre: 'Ollama (dev)', version: 'local-only', rol: 'LLM para dev',
+    descripcion: 'Provider LLM para desarrollo local. llama3.1:8b corriendo en el equipo del dev. Cero costo, cero rate limit, ideal para iteración rápida. NO se usa en producción.',
+    color: '#666666',
+    accentColor: '#666666',
+    detalles: [
+      ['Modelo',     'llama3.1:8b (local)'],
+      ['Puerto',     '11434'],
+      ['Costo',      '$0 (solo electricidad)'],
+      ['Privacidad', 'Datos nunca salen del equipo'],
+      ['Velocidad',  '~50 tokens/seg (CPU)'],
+    ],
+    relacionados: ['langchain'],
+    gear: { teeth: 9, outerR: 50, innerR: 38, holeR: 14, speed: 19, cw: false, cx: 0, cy: 0 },
   },
 }
 
-export const ORDER = ['langchain','fastapi','ollama','chromadb','react','nomic','python']
+export const ORDER = ['langchain','fastapi','cerebras','chromadb','react','hfembed','security']
 
-const ABBR = { langchain:'LC', fastapi:'FA', ollama:'OL', chromadb:'CH', react:'RX', nomic:'NE', python:'PY', netlify:'NL', railway:'RW', groq:'GQ' }
+const ABBR = {
+  langchain:'LC', fastapi:'FA', cerebras:'CB', chromadb:'CH', react:'RX',
+  hfembed:'HF', security:'SC', cloudrun:'CR', ghpages:'GH', groq:'GQ', ollama:'OL',
+}
 
 // ── Calcula posición de etiqueta FUERA del cluster ────────
 function labelPos(gear) {
@@ -361,10 +378,12 @@ export default function Todio() {
   const [hovered, setHovered] = useState(null)
 
   const BADGES = [
-    { bg: '#E8593C', icon: '⚙️', label: 'Motor LLM Local',    sub: 'Ollama + Llama 3.2'    },
-    { bg: '#1B3F7A', icon: '🔗', label: 'Orquestador RAG',    sub: 'LangChain Pipeline'     },
-    { bg: '#1B6B3A', icon: '⚡', label: 'API REST Backend',   sub: 'FastAPI · Puerto 8001'  },
-    { bg: '#5F5E5A', icon: '🔍', label: 'Búsqueda Semántica', sub: 'ChromaDB · Cos. sim.'   },
+    { bg: '#B03A00', icon: '⚡', label: 'Motor LLM Cloud',    sub: 'Cerebras · llama3.1-8b'    },
+    { bg: '#1B3F7A', icon: '🔗', label: 'Orquestador RAG',    sub: 'LangChain Pipeline'       },
+    { bg: '#4285F4', icon: '☁️', label: 'Hosting Backend',    sub: 'Google Cloud Run'          },
+    { bg: '#6B1B6B', icon: '🔍', label: 'Base Vectorial',     sub: 'ChromaDB · 854 chunks'    },
+    { bg: '#7A1A1A', icon: '🛡️', label: 'Security Shield',    sub: '6 filtros input · 3 output'},
+    { bg: '#181717', icon: '📦', label: 'Hosting Frontend',   sub: 'GitHub Pages · Actions'    },
   ]
 
   const hovComp = hovered ? COMPONENTES[hovered] : null
@@ -462,16 +481,17 @@ export default function Todio() {
 
       </div>
 
-      {/* ── Deploy en la Nube ──────────────────────────────── */}
+      {/* ── Deploy en la Nube (stack actual) ────────────────── */}
       <section className="todio-cloud-section">
 
         <div>
-          <div className="cloud-section-label">☁️ Deploy en la Nube</div>
-          <h2 className="cloud-section-title">Arquitectura Netlify + Railway + Groq</h2>
+          <div className="cloud-section-label">☁️ Deploy en producción</div>
+          <h2 className="cloud-section-title">GitHub Pages + Cloud Run + Cerebras</h2>
           <p className="cloud-section-subtitle">
-            Alternativa cloud para que el sistema funcione completamente en internet sin depender
-            de una máquina local. Netlify sirve el frontend React, Railway ejecuta FastAPI con
-            ChromaDB persistente, y Groq reemplaza a Ollama con el mismo modelo Llama 3.2 — gratis.
+            Stack actual en vivo. GitHub Pages sirve el frontend React bajo /f22-chatbot/.
+            Google Cloud Run ejecuta FastAPI + ChromaDB + sentence-transformers en un
+            contenedor con 2 vCPU / 2 GiB. Cerebras Cloud entrega inferencia LLM a
+            ~2000 tokens/seg con free tier de 1M TPM.
           </p>
         </div>
 
@@ -480,42 +500,42 @@ export default function Todio() {
           <div className="cloud-node cloud-node--user">
             <div className="cn-icon">👤</div>
             <div className="cn-label">Usuario</div>
-            <div className="cn-sub">Navegador web</div>
+            <div className="cn-sub">Navegador</div>
           </div>
 
           <div className="cloud-arrow">→</div>
 
-          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#00AD9F' }}
-            onClick={() => navigate('/todio/netlify')}>
-            <div className="cn-icon">⚡</div>
-            <div className="cn-badge" style={{ background: '#00AD9F' }}>Netlify</div>
+          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#181717' }}
+            onClick={() => navigate('/todio/ghpages')}>
+            <div className="cn-icon">📦</div>
+            <div className="cn-badge" style={{ background: '#181717' }}>GitHub Pages</div>
             <div className="cn-label">Frontend React</div>
-            <div className="cn-sub">CDN Global · HTTPS</div>
-            <div className="cn-detail">tu-app.netlify.app</div>
+            <div className="cn-sub">Vite build · CDN Fastly</div>
+            <div className="cn-detail">sergio80garci.github.io/f22-chatbot</div>
             <div className="cn-hint">Ver detalles →</div>
           </div>
 
           <div className="cloud-arrow">→</div>
 
-          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#7C3AED' }}
-            onClick={() => navigate('/todio/railway')}>
-            <div className="cn-icon">🚀</div>
-            <div className="cn-badge" style={{ background: '#7C3AED' }}>Railway</div>
-            <div className="cn-label">FastAPI + ChromaDB</div>
-            <div className="cn-sub">Python 3.11 · Volumen</div>
-            <div className="cn-detail">tu-app.railway.app</div>
+          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#4285F4' }}
+            onClick={() => navigate('/todio/cloudrun')}>
+            <div className="cn-icon">☁️</div>
+            <div className="cn-badge" style={{ background: '#4285F4' }}>Cloud Run</div>
+            <div className="cn-label">FastAPI + ChromaDB + HF</div>
+            <div className="cn-sub">us-central1 · 2 vCPU · 2 GiB</div>
+            <div className="cn-detail">f22-chatbot-backend-...run.app</div>
             <div className="cn-hint">Ver detalles →</div>
           </div>
 
           <div className="cloud-arrow">→</div>
 
-          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#F97316' }}
-            onClick={() => navigate('/todio/groq')}>
+          <div className="cloud-node cloud-node--service" style={{ borderTopColor: '#B03A00' }}
+            onClick={() => navigate('/todio/cerebras')}>
             <div className="cn-icon">🧠</div>
-            <div className="cn-badge" style={{ background: '#F97316' }}>Groq API</div>
-            <div className="cn-label">Llama 3.2 · Gratis</div>
-            <div className="cn-sub">~200ms · LPU Hardware</div>
-            <div className="cn-detail">console.groq.com</div>
+            <div className="cn-badge" style={{ background: '#B03A00' }}>Cerebras</div>
+            <div className="cn-label">llama3.1-8b · 2000 tok/s</div>
+            <div className="cn-sub">Free tier ~1M TPM</div>
+            <div className="cn-detail">cloud.cerebras.ai</div>
             <div className="cn-hint">Ver detalles →</div>
           </div>
         </div>
@@ -524,24 +544,24 @@ export default function Todio() {
         <div className="cloud-steps">
           {[
             {
-              n: '1', color: '#F97316',
-              title: 'Cuenta Groq API',
-              desc: 'Registrarse en console.groq.com y crear una API Key gratuita. Reemplaza a Ollama usando el mismo modelo Llama 3.2, sin GPU local ni costo de inferencia.',
+              n: '1', color: '#B03A00',
+              title: 'Cerebras API Key',
+              desc: 'Registro gratis en cloud.cerebras.ai con Google. Generar API Key (csk-...). Modelo llama3.1-8b disponible en free tier con ~1M TPM y 14k requests/día.',
             },
             {
-              n: '2', color: '#7C3AED',
-              title: 'Backend en Railway',
-              desc: 'Conectar el repositorio GitHub a Railway. Detecta Python automáticamente. Agregar GROQ_API_KEY, CHROMA_PATH y demás variables de entorno. Crear volumen para ChromaDB.',
+              n: '2', color: '#4285F4',
+              title: 'Backend en Cloud Run',
+              desc: 'Habilitar APIs: Cloud Run + Cloud Build + Artifact Registry. Crear servicio desde GitHub repo. Cloud Build construye desde Dockerfile, deploy automático en cada push a main. Env vars: CEREBRAS_API_KEY, EMBEDDING_PROVIDER=hf, ALLOWED_ORIGINS, etc.',
             },
             {
-              n: '3', color: '#00AD9F',
-              title: 'Frontend en Netlify',
-              desc: 'Importar el repo en netlify.com. Build command: npm run build. Publish directory: dist. Agregar variable VITE_API_URL apuntando al dominio del backend Railway.',
+              n: '3', color: '#181717',
+              title: 'Frontend en GitHub Pages',
+              desc: 'Settings → Pages → Source: GitHub Actions. Workflow .github/workflows/deploy-pages.yml construye Vite y publica bajo /f22-chatbot/. Secret VITE_API_URL apunta al backend Cloud Run.',
             },
             {
-              n: '4', color: '#1B6B3A',
-              title: 'CORS + Ingestión',
-              desc: 'Actualizar allow_origins en main.py con el dominio Netlify. Ejecutar ingestión de documentos en Railway para cargar ChromaDB en la nube. Sistema listo.',
+              n: '4', color: '#7A1A1A',
+              title: 'CORS + Security Shield',
+              desc: 'ALLOWED_ORIGINS incluye https://sergio80garci.github.io. Backend integra security.py con 6 filtros de input contra prompt injection, jailbreaks y exfiltración. Sistema listo en producción.',
             },
           ].map(step => (
             <div key={step.n} className="cloud-step">
@@ -557,15 +577,15 @@ export default function Todio() {
         {/* Comparativa local vs nube */}
         <div className="cloud-compare">
           <div className="compare-col">
-            <div className="compare-header compare-header--local">🖥️ Arquitectura Local</div>
+            <div className="compare-header compare-header--local">🖥️ Entorno de desarrollo</div>
             {[
-              ['Frontend',    'localhost:5173'],
-              ['Backend',     'localhost:8001'],
-              ['LLM',         'Ollama llama3.2 (2 GB local)'],
-              ['Embeddings',  'nomic-embed · Ollama local'],
-              ['Vector DB',   './data/chroma_db · filesystem'],
-              ['Costo',       '$0 · solo electricidad'],
-              ['Requisito',   'PC encendida + Ollama corriendo'],
+              ['Frontend',    'localhost:5173 (Vite HMR)'],
+              ['Backend',     'localhost:8001 (uvicorn --reload)'],
+              ['LLM',         'Ollama llama3.1:8b (local)'],
+              ['Embeddings',  'sentence-transformers HF (in-process)'],
+              ['Vector DB',   './data/chroma_db (854 chunks)'],
+              ['Hot reload',  'Sí · Vite + uvicorn reload'],
+              ['Costo',       '$0 (solo electricidad)'],
             ].map(([k, v]) => (
               <div key={k} className="compare-row">
                 <span className="compare-key">{k}</span>
@@ -574,15 +594,15 @@ export default function Todio() {
             ))}
           </div>
           <div className="compare-col">
-            <div className="compare-header compare-header--cloud">☁️ Arquitectura Nube</div>
+            <div className="compare-header compare-header--cloud">☁️ Producción</div>
             {[
-              ['Frontend',    'tu-app.netlify.app'],
-              ['Backend',     'tu-app.railway.app'],
-              ['LLM',         'Groq API · Llama 3.2 (gratis)'],
-              ['Embeddings',  'nomic-embed · Railway server'],
-              ['Vector DB',   'ChromaDB · volumen Railway'],
-              ['Costo',       '~$0–$5/mes · Railway crédito'],
-              ['Requisito',   'Solo GitHub + cuentas cloud'],
+              ['Frontend',    'sergio80garci.github.io/f22-chatbot'],
+              ['Backend',     'f22-chatbot-backend-...run.app'],
+              ['LLM',         'Cerebras llama3.1-8b (free tier)'],
+              ['Embeddings',  'sentence-transformers HF (in-image)'],
+              ['Vector DB',   'ChromaDB en imagen Docker (854 chunks)'],
+              ['Cold start',  '~40s (carga modelo HF en memoria)'],
+              ['Costo',       '~$0/mes (free tier en uso bajo)'],
             ].map(([k, v]) => (
               <div key={k} className="compare-row">
                 <span className="compare-key">{k}</span>
@@ -592,6 +612,87 @@ export default function Todio() {
           </div>
         </div>
 
+      </section>
+
+      {/* ── Skills de Claude Code ────────────────────────────── */}
+      <section className="todio-skills-section">
+        <div>
+          <div className="cloud-section-label">🤖 Skills de Claude Code</div>
+          <h2 className="cloud-section-title">8 comandos para mantener el proyecto</h2>
+          <p className="cloud-section-subtitle">
+            Skills personalizados que viven en <code>.claude/commands/</code>. Cada uno
+            ejecuta un workflow completo (ingestión, build, deploy, auditoría). Se invocan
+            tipeando <code>/nombre</code> en el chat de Claude Code dentro del proyecto.
+          </p>
+        </div>
+
+        <div className="skills-grid">
+          {[
+            { id: 'ingest', icon: '📥', cat: 'Construcción', catColor: '#1B6B3A',
+              title: '/ingest',
+              subtitle: 'Procesamiento de documentos F22',
+              desc: 'Lee PDFs, DOCX, XLSX e imágenes desde data/f22/raw, aplica OCR (Tesseract+spa), chunking semántico y embedea con HF nomic-embed-text-v1.5. Resulta en 854 chunks listos para RAG.' },
+            { id: 'build-backend', icon: '⚙️', cat: 'Construcción', catColor: '#1B6B3A',
+              title: '/build-backend',
+              subtitle: 'FastAPI + RAG Pipeline',
+              desc: 'Construye el backend completo: routers, modelos Pydantic, pipeline RAG con stream_rag, retriever con umbral 0.68, integración LLM multi-provider y health checks.' },
+            { id: 'build-frontend', icon: '🎨', cat: 'Construcción', catColor: '#1B6B3A',
+              title: '/build-frontend',
+              subtitle: 'Sitio web + chatbot React',
+              desc: 'Genera la SPA con estilo SII: chat con SSE streaming, página de documentos con resúmenes, footer con versiones, navbar dinámico, logo oficial SII.' },
+            { id: 'deploy', icon: '🚀', cat: 'Operación', catColor: '#4285F4',
+              title: '/deploy',
+              subtitle: 'Despliegue completo del sistema',
+              desc: 'Levanta backend + frontend (Docker Compose en local, Cloud Run + GitHub Pages en prod). Verifica health checks y CORS. Útil para arranque rápido.' },
+            { id: 'security-audit', icon: '🔍', cat: 'Seguridad', catColor: '#7A1A1A',
+              title: '/security-audit',
+              subtitle: 'Checklist genérico de seguridad',
+              desc: 'Auditoría en 7 áreas: env vars, validación de input, info sensible, CORS/headers, datos, dependencias, autenticación. Devuelve checklist con [ ] / [x].' },
+            { id: 'security-shield', icon: '🛡️', cat: 'Seguridad', catColor: '#7A1A1A',
+              title: '/security-shield',
+              subtitle: 'Read-only security sweep',
+              desc: 'Auditoría profunda en 3 fases: detección de secretos (12 proveedores), vulnerabilidades del backend (CORS, path traversal, rate limit) y log hygiene. Sugiere diffs.' },
+            { id: 'responsive-design', icon: '📱', cat: 'UX/UI', catColor: '#006699',
+              title: '/responsive-design',
+              subtitle: 'Mobile-first responsive',
+              desc: 'Guía para hacer cualquier componente React responsive: breakpoints, clamp(), grid auto-fit, hamburger menu. Mobile-first sin frameworks pesados.' },
+            { id: 'chat-ui-centrado', icon: '💬', cat: 'UX/UI', catColor: '#006699',
+              title: '/chat-ui-centrado',
+              subtitle: 'Chat centrado + skeleton + preguntas',
+              desc: 'Corrige UX del chat en pantallas grandes: contenedor centrado, skeleton loader, preguntas sugeridas aleatorias rotativas desde questions_pool.json.' },
+          ].map(skill => (
+            <div key={skill.id} className="skill-card" style={{ borderLeftColor: skill.catColor }}>
+              <div className="skill-header">
+                <div className="skill-icon" style={{ background: skill.catColor }}>
+                  {skill.icon}
+                </div>
+                <div className="skill-cat" style={{ color: skill.catColor }}>{skill.cat}</div>
+              </div>
+              <div className="skill-title">{skill.title}</div>
+              <div className="skill-subtitle">{skill.subtitle}</div>
+              <p className="skill-desc">{skill.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="skills-stats">
+          <div className="skills-stat">
+            <div className="stat-num" style={{ color: '#1B6B3A' }}>3</div>
+            <div className="stat-label">Construcción</div>
+          </div>
+          <div className="skills-stat">
+            <div className="stat-num" style={{ color: '#4285F4' }}>1</div>
+            <div className="stat-label">Operación</div>
+          </div>
+          <div className="skills-stat">
+            <div className="stat-num" style={{ color: '#7A1A1A' }}>2</div>
+            <div className="stat-label">Seguridad</div>
+          </div>
+          <div className="skills-stat">
+            <div className="stat-num" style={{ color: '#006699' }}>2</div>
+            <div className="stat-label">UX / UI</div>
+          </div>
+        </div>
       </section>
 
     </div>

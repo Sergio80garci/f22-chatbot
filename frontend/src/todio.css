@@ -769,3 +769,132 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Skills de Claude Code
+═══════════════════════════════════════════════════════════ */
+
+.todio-skills-section {
+  width: 100%;
+  max-width: 1100px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 32px clamp(20px, 4vw, 40px);
+  box-shadow: 0 6px 24px rgba(11, 76, 140, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.todio-skills-section code {
+  background: #F1EFE8;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: #0B4C8C;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.skill-card {
+  background: #F9F8F4;
+  border-radius: 8px;
+  padding: 16px 18px;
+  border-left: 4px solid #c8d4e0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.skill-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.skill-cat {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skill-title {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0B4C8C;
+  margin-top: 4px;
+}
+
+.skill-subtitle {
+  font-size: 0.78rem;
+  color: #5F5E5A;
+  font-weight: 600;
+}
+
+.skill-desc {
+  font-size: 0.78rem;
+  color: #6b6a67;
+  margin: 6px 0 0;
+  line-height: 1.55;
+}
+
+.skills-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.skills-stat {
+  text-align: center;
+  padding: 12px 8px;
+  background: #F9F8F4;
+  border-radius: 6px;
+}
+
+.stat-num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #5F5E5A;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .skills-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
