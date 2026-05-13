@@ -4,6 +4,8 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import Chat from './pages/Chat'
 import Documentos from './pages/Documentos'
+import Todio from './pages/Todio'
+import TodioDetalle from './pages/TodioDetalle'
 
 // Vite expone import.meta.env.BASE_URL = base de vite.config.js
 // React Router lo necesita para que /chat funcione bajo /f22-chatbot/chat.
@@ -19,6 +21,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/documentos" element={<Documentos />} />
+            <Route path="/todio" element={<Todio />} />
+            <Route path="/todio/:id" element={<TodioDetalle />} />
           </Routes>
         </div>
         <Footer />

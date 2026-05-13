@@ -14,6 +14,10 @@ const PAGE_INFO = {
     title: 'Documentos indexados',
     subtitle: 'Fuentes oficiales del Formulario 22 disponibles para consulta',
   },
+  '/todio': {
+    title: 'Arquitectura del sistema',
+    subtitle: 'Blueprint de los componentes del Asistente F22',
+  },
 }
 
 const styles = {
@@ -98,7 +102,11 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const page = PAGE_INFO[pathname] || PAGE_INFO['/']
+  // Match exacto, sino fallback al prefijo de primer segmento (ej. /todio/xyz → /todio)
+  const matchKey = PAGE_INFO[pathname]
+    ? pathname
+    : Object.keys(PAGE_INFO).find(k => k !== '/' && pathname.startsWith(k + '/'))
+  const page = PAGE_INFO[matchKey] || PAGE_INFO['/']
 
   const linkStyle = ({ isActive }) => ({
     ...styles.link,
