@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>F22 Chatbot</title>
+  <script>
+    // SPA fallback para GitHub Pages.
+    // Guarda la ruta en sessionStorage y redirige al index.html del proyecto.
+    // App.jsx la restaura al cargar para que React Router la maneje.
+    sessionStorage.redirect = location.href;
+    location.replace('/f22-chatbot/');
+  </script>
+</head>
+<body></body>
+</html>

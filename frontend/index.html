@@ -6,6 +6,17 @@
     <title>F22 Chatbot — SII Declaración de Renta</title>
   </head>
   <body>
+    <script>
+      // Si llegamos aqui via 404.html (deep-link en GitHub Pages),
+      // restauramos la ruta original antes de montar React.
+      (function () {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, '', redirect);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

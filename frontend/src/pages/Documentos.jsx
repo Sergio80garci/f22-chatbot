@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { api } from '../api'
 
 const TYPE_STYLE = {
   pdf:  { bg: '#E6F1FB', color: '#0B4C8C' },
@@ -16,7 +16,7 @@ export default function Documentos() {
     let timer
 
     const fetchDocs = () => {
-      axios.get('/api/documents')
+      api.get('/api/documents')
         .then(r => {
           setDocs(r.data)
           setLoading(false)

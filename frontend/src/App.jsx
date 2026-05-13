@@ -5,9 +5,13 @@ import Home from './pages/Home'
 import Chat from './pages/Chat'
 import Documentos from './pages/Documentos'
 
+// Vite expone import.meta.env.BASE_URL = base de vite.config.js
+// React Router lo necesita para que /chat funcione bajo /f22-chatbot/chat.
+const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={BASENAME}>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Navbar />
         <div style={{ flex: 1 }}>

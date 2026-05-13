@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
+import { API_BASE } from '../api'
 
 const INITIAL_MESSAGE = {
   role: 'assistant',
   content: 'Hola, soy el asistente del Formulario 22. ¿En qué puedo ayudarte hoy?',
   sources: [],
 }
-
-const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function ChatWindow({ suggestedQuestions = [], loadingQuestions = false }) {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])

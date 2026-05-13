@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { api } from '../api'
 
 const TYPE_COLORS = {
   pdf:  { bg: '#E6F1FB', color: '#0B4C8C', label: 'PDF' },
@@ -26,7 +26,7 @@ export default function Home() {
   const [docsLoading, setDocsLoading] = useState(true)
 
   useEffect(() => {
-    axios.get('/api/documents')
+    api.get('/api/documents')
       .then(r => setDocs(r.data))
       .catch(() => setDocs([]))
       .finally(() => setDocsLoading(false))

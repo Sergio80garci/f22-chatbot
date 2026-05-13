@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { api } from '../api'
 import ChatWindow from '../components/ChatWindow'
 
 const FALLBACK_POOL = [
@@ -26,7 +26,7 @@ export default function Chat() {
   useEffect(() => {
     async function fetchSuggestedQuestions() {
       try {
-        const res = await axios.get(`/api/suggested-questions?t=${Date.now()}`)
+        const res = await api.get(`/api/suggested-questions?t=${Date.now()}`)
         const pool = Array.isArray(res.data) && res.data.length > 0 ? res.data : FALLBACK_POOL
         setSuggestedQuestions(pickRandom(pool, 3))
       } catch {

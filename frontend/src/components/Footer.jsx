@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { api } from '../api'
 
 const FRONTEND_VERSION = '2.1.0'
 
@@ -7,7 +7,7 @@ export default function Footer() {
   const [backendVersion, setBackendVersion] = useState(null)
 
   useEffect(() => {
-    axios.get('/api/version')
+    api.get('/api/version')
       .then(r => setBackendVersion(r.data))
       .catch(() => setBackendVersion(null))
   }, [])
