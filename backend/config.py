@@ -7,14 +7,18 @@ class Settings(BaseSettings):
     # gemini_model: str = "gemini-2.5-flash"
     # gemini_embedding_model: str = "models/gemini-embedding-001"
 
-    # LLM provider: "groq" (cloud, rápido pero con TPD) o "ollama" (local, lento pero ilimitado)
-    llm_provider: str = "groq"
+    # LLM provider: "cerebras" (cloud, ultra-rapido, 1M TPM gratis) | "groq" (500k TPD) | "ollama" (local)
+    llm_provider: str = "cerebras"
 
     # Embedding provider: "hf" (sentence-transformers in-process) o "ollama" (requiere Ollama corriendo)
     embedding_provider: str = "hf"
     hf_embed_model: str = "nomic-ai/nomic-embed-text-v1.5"
 
-    # Groq (LLM cloud)
+    # Cerebras (LLM cloud — recomendado, ultra-rapido, free tier generoso)
+    cerebras_api_key: str = ""
+    cerebras_model: str = "llama-3.3-70b"
+
+    # Groq (LLM cloud — alternativa)
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
 

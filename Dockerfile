@@ -29,7 +29,7 @@ COPY data/questions_pool.json ./data/questions_pool.json
 COPY data/summaries_cache.json ./data/summaries_cache.json
 
 ENV PORT=8080 \
-    LLM_PROVIDER=groq \
+    LLM_PROVIDER=cerebras \
     EMBEDDING_PROVIDER=hf \
     HF_EMBED_MODEL=nomic-ai/nomic-embed-text-v1.5 \
     CHROMA_PATH=/app/data/chroma_db

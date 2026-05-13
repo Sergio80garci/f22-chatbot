@@ -65,13 +65,25 @@ Preguntas:"""
 
 @lru_cache(maxsize=1)
 def _get_llm():
-    if settings.llm_provider.lower() == "ollama":
+    provider = settings.llm_provider.lower()
+
+    if provider == "ollama":
         return ChatOllama(
             model=settings.ollama_llm_model,
             base_url=settings.ollama_base_url,
             temperature=0,
             num_predict=settings.llm_max_tokens,
         )
+
+    if provider == "cerebras":
+        from langchain_cerebras import ChatCerebras
+        return ChatCerebras(
+            model=settings.cerebras_model,
+            api_key=settings.cerebras_api_key,
+            temperature=0,
+            max_tokens=settings.llm_max_tokens,
+        )
+
     return ChatGroq(
         model=settings.groq_model,
         api_key=settings.groq_api_key,

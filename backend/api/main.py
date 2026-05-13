@@ -38,8 +38,11 @@ async def version():
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health():
-    if settings.llm_provider.lower() == "ollama":
+    provider = settings.llm_provider.lower()
+    if provider == "ollama":
         llm_status = f"ok (ollama/{settings.ollama_llm_model})"
+    elif provider == "cerebras":
+        llm_status = f"ok (cerebras/{settings.cerebras_model})"
     else:
         llm_status = f"ok (groq/{settings.groq_model})"
 

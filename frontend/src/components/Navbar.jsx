@@ -91,8 +91,12 @@ export default function Navbar() {
   return (
     <>
       <nav style={styles.nav}>
-        <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '4px 10px' }}>
-          <img src={`${import.meta.env.BASE_URL}sii-logo.png`} alt="Servicio de Impuestos Internos" style={{ height: '40px', width: 'auto', display: 'block' }} />
+        <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '3px 8px', maxHeight: '46px', boxSizing: 'border-box' }}>
+          <img
+            src={`${import.meta.env.BASE_URL}sii-logo.png`}
+            alt="Servicio de Impuestos Internos"
+            style={{ height: '32px', maxHeight: '32px', width: 'auto', display: 'block', objectFit: 'contain' }}
+          />
         </NavLink>
 
         {/* Desktop menu */}
