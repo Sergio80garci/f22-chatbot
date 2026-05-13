@@ -562,6 +562,13 @@ button {
   }
 }
 
+/* En pantallas muy estrechas, ocultar el subtitulo del navbar (queda solo el titulo) */
+@media (max-width: 480px) {
+  .nav-page-info > div:last-child {
+    display: none !important;
+  }
+}
+
 /* Suggested questions skeleton loader */
 .questions-skeleton {
   margin-top: 0.75rem;

@@ -37,9 +37,6 @@ export default function Documentos() {
 
   return (
     <main className="page-container" style={{ height: '100%', overflowY: 'auto' }}>
-      <h1 style={{ color: 'var(--sii-azul)', fontSize: 'clamp(1.2rem, 4vw, 1.4rem)', marginBottom: '0.4rem' }}>
-        Documentos indexados
-      </h1>
       {!loading && !error && (
         <p style={{ color: 'var(--sii-gris)', fontSize: 'clamp(0.75rem, 2vw, 0.88rem)', marginBottom: '1.5rem' }}>
           {docs.length} documentos · {totalChunks} chunks almacenados en ChromaDB

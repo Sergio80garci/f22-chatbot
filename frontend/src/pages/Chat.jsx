@@ -40,20 +40,6 @@ export default function Chat() {
 
   return (
     <div className="chat-page-outer">
-      <header style={{
-        background: 'var(--sii-azul)',
-        color: '#fff',
-        padding: 'clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 2vw, 1.5rem)',
-        flexShrink: 0,
-      }}>
-        <h1 style={{ fontSize: 'clamp(0.95rem, 3vw, 1.1rem)', fontWeight: 700 }}>
-          Consulta sobre F22
-        </h1>
-        <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.82rem)', opacity: 0.75, marginTop: '0.2rem' }}>
-          Las respuestas se generan exclusivamente desde documentos oficiales del SII
-        </p>
-      </header>
-
       <div className="chat-page-body">
         <ChatWindow
           suggestedQuestions={suggestedQuestions}

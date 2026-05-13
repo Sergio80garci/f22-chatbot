@@ -1,5 +1,20 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+
+const PAGE_INFO = {
+  '/': {
+    title: 'Asistente F22',
+    subtitle: 'Información oficial sobre el Formulario 22 de Declaración de Renta',
+  },
+  '/chat': {
+    title: 'Consulta sobre F22',
+    subtitle: 'Las respuestas se generan exclusivamente desde documentos oficiales del SII',
+  },
+  '/documentos': {
+    title: 'Documentos indexados',
+    subtitle: 'Fuentes oficiales del Formulario 22 disponibles para consulta',
+  },
+}
 
 const styles = {
   nav: {
@@ -82,6 +97,8 @@ const styles = {
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const page = PAGE_INFO[pathname] || PAGE_INFO['/']
 
   const linkStyle = ({ isActive }) => ({
     ...styles.link,
@@ -91,13 +108,23 @@ export default function Navbar() {
   return (
     <>
       <nav style={styles.nav}>
-        <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '3px 8px', maxHeight: '46px', boxSizing: 'border-box' }}>
-          <img
-            src={`${import.meta.env.BASE_URL}sii-logo.png`}
-            alt="Servicio de Impuestos Internos"
-            style={{ height: '32px', maxHeight: '32px', width: 'auto', display: 'block', objectFit: 'contain' }}
-          />
-        </NavLink>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(0.5rem, 1.5vw, 0.9rem)', minWidth: 0, flex: 1 }}>
+          <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '3px 8px', maxHeight: '46px', boxSizing: 'border-box', flexShrink: 0 }}>
+            <img
+              src={`${import.meta.env.BASE_URL}sii-logo.png`}
+              alt="Servicio de Impuestos Internos"
+              style={{ height: '32px', maxHeight: '32px', width: 'auto', display: 'block', objectFit: 'contain' }}
+            />
+          </NavLink>
+          <div className="nav-page-info" style={{ color: '#fff', minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1rem)', fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {page.title}
+            </div>
+            <div style={{ fontSize: 'clamp(0.65rem, 1.3vw, 0.75rem)', opacity: 0.75, marginTop: '2px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {page.subtitle}
+            </div>
+          </div>
+        </div>
 
         {/* Desktop menu */}
         <ul className="nav-desktop" style={styles.links}>
