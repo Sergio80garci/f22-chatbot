@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # Cerebras (LLM cloud — recomendado, ultra-rapido, free tier generoso)
     cerebras_api_key: str = ""
-    cerebras_model: str = "llama-3.3-70b"
+    # Modelos disponibles free: llama3.1-8b | qwen-3-235b-a22b-instruct-2507 | zai-glm-4.7
+    cerebras_model: str = "llama3.1-8b"
 
     # Groq (LLM cloud — alternativa)
     groq_api_key: str = ""
