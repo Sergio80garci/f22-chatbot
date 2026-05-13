@@ -92,7 +92,7 @@ export default function Navbar() {
     <>
       <nav style={styles.nav}>
         <NavLink to="/" style={{ ...styles.brand, background: '#fff', borderRadius: '4px', padding: '4px 10px', gap: '8px' }}>
-          <img src="/sii-logo.png" alt="SII" style={{ height: '36px', width: 'auto', display: 'block' }} />
+          <img src={`${import.meta.env.BASE_URL}sii-logo.png`} alt="SII" style={{ height: '36px', width: 'auto', display: 'block' }} />
           <span style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.78rem)', color: '#444', fontWeight: 600, whiteSpace: 'nowrap' }}>
             Formulario 22 — Asistente IA
           </span>
