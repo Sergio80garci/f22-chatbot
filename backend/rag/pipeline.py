@@ -27,7 +27,10 @@ hay información relevante en el contexto, responde EXACTAMENTE: \
 "Lo siento, solo puedo responder consultas relacionadas con el Formulario 22 de \
 Declaración de Renta del SII de Chile, basándome en los documentos disponibles."
 3. Cita la fuente cuando uses contexto: nombre del archivo y sección o línea del formulario.
-4. Responde en español formal, claro y preciso.
+4. Responde en español formal, claro y preciso. Cuando la pregunta sea general \
+(ej. "¿qué es...?", "¿cuál es el propósito...?"), entrega una respuesta completa \
+que cubra: definición, quiénes deben usarlo, plazo o periodicidad, y propósito \
+principal. Si la pregunta es específica, ve directo al punto.
 5. Menciona códigos de línea explícitamente cuando corresponda (ej: código 159, línea 10).
 
 Contexto de los documentos F22:
@@ -116,10 +119,36 @@ def _extract_sources(docs) -> list[str]:
     return sources
 
 
+# Frases que indican que el LLM rechazo la pregunta como off-topic / sin info,
+# aunque la busqueda haya retornado chunks. En esos casos no debemos mostrar
+# fuentes (la respuesta no se baso en ningun archivo).
+_REFUSAL_INDICATORS = (
+    "solo puedo responder consultas relacionadas con el formulario 22",
+    "no tengo informaci",          # "no tengo información"
+    "no tengo info",               # variantes cortas
+    "no hay menci",                # "no hay mención"
+    "no se menciona",
+    "no está disponible en los documentos",
+    "no esta disponible en los documentos",
+    "no encontre informaci",
+    "no encontré informaci",
+    "no relacionado con el formulario 22",
+    "no relacionada con el formulario 22",
+)
+
+
 def _filter_cited_sources(answer: str, sources: list[str]) -> list[str]:
     """Filtra la lista de fuentes para quedarse solo con las realmente citadas
     en el texto de la respuesta. Compara por nombre de archivo y por su 'stem'
-    (sin extensión) para tolerar variaciones tipo 'l2_instruccion' vs 'l2_instruccion.pdf'."""
+    (sin extensión) para tolerar variaciones tipo 'l2_instruccion' vs 'l2_instruccion.pdf'.
+
+    Casos especiales:
+    - Si la respuesta contiene indicadores de rechazo/no-info Y no cita ningun
+      archivo, no mostramos fuentes (la respuesta es un rechazo, no se baso
+      en ningun documento).
+    - Si el LLM dio una respuesta real y NO cito archivos por nombre, igual
+      retornamos las fuentes recuperadas (mejor algo que nada para trazabilidad).
+    """
     if not answer or not sources:
         return sources
     answer_low = answer.lower()
@@ -129,6 +158,11 @@ def _filter_cited_sources(answer: str, sources: list[str]) -> list[str]:
         stem = name.rsplit(".", 1)[0]
         if name in answer_low or stem in answer_low:
             cited.append(src)
+    # Si el LLM rechazo la pregunta (no info / off-topic) y no cito archivos
+    # explicitamente, no mostrar fuentes.
+    is_refusal = any(p in answer_low for p in _REFUSAL_INDICATORS)
+    if is_refusal and not cited:
+        return []
     return cited if cited else sources
 
 
